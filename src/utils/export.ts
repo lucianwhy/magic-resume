@@ -3,6 +3,7 @@ import { PDF_EXPORT_CONFIG } from "@/config";
 import { normalizeFontFamily } from "@/utils/fonts";
 import { ResumeData } from "@/types/resume";
 import { generateResumeMarkdown, ResumeMarkdownOptions } from "@/utils/markdown";
+import html2canvas from "html2canvas";
 
 const INVALID_FILE_NAME_CHAR_REGEX = /[\\/:*?"<>|]/g;
 
@@ -106,6 +107,15 @@ export interface ExportToPdfOptions {
   errorMessage?: string;
 }
 
+export interface ExportToImageOptions {
+  elementId: string;
+  title: string;
+  onStart?: () => void;
+  onEnd?: () => void;
+  successMessage?: string;
+  errorMessage?: string;
+}
+
 interface ExportResumeFileOptions {
   resume?: ResumeData | null;
   title?: string;
@@ -168,6 +178,64 @@ export const exportResumeAsMarkdown = ({
     if (successMessage) toast.success(successMessage);
   } catch (error) {
     console.error("Markdown export error:", error);
+    if (errorMessage) toast.error(errorMessage);
+  } finally {
+    onEnd?.();
+  }
+};
+
+export const exportToImage = async ({
+  elementId,
+  title,
+  onStart,
+  onEnd,
+  successMessage,
+  errorMessage
+}: ExportToImageOptions) => {
+  onStart?.();
+
+  try {
+    const element = document.querySelector<HTMLElement>(`#${elementId}`);
+    if (!element) {
+      throw new Error(`Image element #${elementId} not found`);
+    }
+
+    const pageBreakLines = Array.from(
+      element.querySelectorAll<HTMLElement>(".page-break-line")
+    );
+    const originalDisplays = pageBreakLines.map((line) => line.style.display);
+    pageBreakLines.forEach((line) => {
+      line.style.display = "none";
+    });
+
+    try {
+      const width = Math.max(element.scrollWidth, element.clientWidth);
+      const height = Math.max(element.scrollHeight, element.clientHeight);
+      const maxPixels = 12_000_000;
+      const scale = Math.max(0.5, Math.min(2, Math.sqrt(maxPixels / (width * height))));
+      const canvas = await html2canvas(element, {
+        backgroundColor: "#ffffff",
+        scale,
+        useCORS: true,
+        imageTimeout: 5_000,
+        logging: false,
+      });
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((value) => {
+          if (value) resolve(value);
+          else reject(new Error("Failed to encode resume image"));
+        }, "image/png");
+      });
+      downloadBlob(blob, `${getSafeFileName(title)}.png`);
+    } finally {
+      pageBreakLines.forEach((line, index) => {
+        line.style.display = originalDisplays[index];
+      });
+    }
+
+    if (successMessage) toast.success(successMessage);
+  } catch (error) {
+    console.error("Image export error:", error);
     if (errorMessage) toast.error(errorMessage);
   } finally {
     onEnd?.();

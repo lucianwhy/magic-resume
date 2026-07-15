@@ -95,6 +95,29 @@ export const JsonGlassIcon = ({ className, isLoading }: GlassIconProps) => (
   </svg>
 );
 
+export const ImageGlassIcon = ({ className, isLoading }: GlassIconProps) => (
+  <svg viewBox="0 0 100 100" fill="none" className={className}>
+    <defs>
+      <filter id="img-glow"><feGaussianBlur stdDeviation="8" /></filter>
+      <linearGradient id="img-glass" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.7" />
+        <stop offset="100%" stopColor="#ffffff" stopOpacity="0.1" />
+      </linearGradient>
+      <linearGradient id="img-sky" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#38bdf8" />
+        <stop offset="100%" stopColor="#2563eb" />
+      </linearGradient>
+    </defs>
+    <rect x="18" y="25" width="64" height="48" rx="9" fill="#2563eb" filter="url(#img-glow)" opacity="0.55" />
+    <rect x="18" y="25" width="64" height="48" rx="9" fill="url(#img-sky)" />
+    <rect x="12" y="18" width="64" height="48" rx="10" fill="url(#img-glass)" stroke="#ffffff" strokeOpacity="0.7" strokeWidth="1.5" />
+    <circle cx="58" cy="33" r="5" fill="#ffffff" opacity="0.9" />
+    <path d="M20 58 L36 43 L47 53 L55 46 L70 58" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+      {isLoading && <animate attributeName="stroke-opacity" values="1;0.3;1" dur="1s" repeatCount="indefinite" />}
+    </path>
+  </svg>
+);
+
 export const MarkdownGlassIcon = ({ className, isLoading }: GlassIconProps) => (
   <svg viewBox="0 0 100 100" fill="none" className={className}>
     <defs>

@@ -261,7 +261,8 @@
     "modal": {
       "title": "Export Resume",
       "subtitle": "Select the format you want to export your resume",
-      "pdfDesc": "High-precision rendering with 100% format accuracy. Recommended for job applications.",
+    "pdfDesc": "High-precision rendering with 100% format accuracy. Recommended for job applications.",
+    "imageDesc": "Export a high-resolution PNG for sharing in messages, email, and social media.",
       "printDesc": "Save via system print dialog. Use as a fallback or for custom margins.",
       "jsonDesc": "Export your resume data as JSON to backup or transfer between devices.",
       "markdownDesc": "Convert to plain Markdown text for easy sharing with AI models.",
@@ -269,16 +270,20 @@
     },
     "button": {
       "export": "Export",
-      "exportPdf": "Export PDF (Server)",
+    "exportPdf": "Export PDF (Server)",
+    "exportImage": "High-Resolution Image",
       "exportJson": "Export JSON Config",
       "exportMarkdown": "Export Markdown",
-      "exporting": "Exporting...",
+    "exporting": "Exporting...",
+    "exportingImage": "Rendering image...",
       "exportingJson": "Exporting...",
       "exportingMarkdown": "Exporting...",
       "print": "Browser Print"
     },
     "toast": {
-      "success": "PDF exported successfully",
+    "success": "PDF exported successfully",
+    "imageSuccess": "Image exported successfully",
+    "imageError": "Image export failed",
       "error": "PDF export failed",
       "jsonSuccess": "Configuration exported successfully",
       "jsonError": "Configuration export failed",

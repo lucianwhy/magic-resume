@@ -71,6 +71,43 @@ export const ResumeWorkbench = () => {
         loadSavedConfig();
     }, []);
 
+    useEffect(() => {
+        const importCloudResume = async () => {
+            const hash = new URLSearchParams(window.location.hash.slice(1));
+            const resumeId = hash.get("cloudResume");
+            const token = hash.get("token");
+            if (!resumeId || !token) return;
+
+            try {
+                const response = await fetch(
+                    `/api/resumes/bootstrap/${encodeURIComponent(resumeId)}`,
+                    {
+                        headers: { "X-Resume-Bootstrap-Token": token },
+                    }
+                );
+                const data = await response.json();
+                if (!response.ok || !data?.resume?.id) {
+                    throw new Error(data?.error || "Cloud resume import failed");
+                }
+
+                const store = useResumeStore.getState();
+                if (store.resumes[data.resume.id]) {
+                    store.updateResume(data.resume.id, data.resume);
+                } else {
+                    store.addResume(data.resume);
+                }
+                store.setActiveResume(data.resume.id);
+                window.history.replaceState(null, "", window.location.pathname);
+                toast.success("云端简历已导入此浏览器");
+            } catch (error) {
+                console.error("Cloud resume import error:", error);
+                toast.error("云端简历导入失败，请检查私有链接");
+            }
+        };
+
+        importCloudResume();
+    }, []);
+
     const handleCreateFromModal = (templateId: string | null) => {
         const isBlank = !templateId;
         const newId = createResume(templateId, isBlank);
