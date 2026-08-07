@@ -29,4 +29,7 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./data:/data
+      # Keep verified branch build and first-party CLI across container recreation.
+      - ./runtime-dist:/app/dist:ro
+      - ./scripts:/app/scripts:ro
     restart: always

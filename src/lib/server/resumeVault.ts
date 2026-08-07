@@ -159,6 +159,27 @@ export const saveResume = async (id: string, value: unknown) => {
   return updated;
 };
 
+export const createResume = async (id: string, value: unknown) => {
+  const resume = asDocument(value, id);
+  const filePath = documentPath(id);
+  await mkdir(dirname(filePath), { recursive: true });
+  const created = { ...resume, updatedAt: new Date().toISOString() };
+
+  try {
+    await writeFile(filePath, `${JSON.stringify(created, null, 2)}\n`, {
+      encoding: "utf8",
+      flag: "wx",
+    });
+  } catch (error: any) {
+    if (error?.code === "EEXIST") {
+      throw new ResumeVaultError(409, "Resume already exists");
+    }
+    throw error;
+  }
+
+  return created;
+};
+
 export const patchResume = async (id: string, value: unknown) => {
   if (!isPlainObject(value)) {
     throw new ResumeVaultError(400, "Patch must be a JSON object");

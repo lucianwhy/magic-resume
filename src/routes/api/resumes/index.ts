@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
+  createResume,
   ResumeVaultError,
   listResumes,
   readJsonBody,
@@ -37,7 +38,7 @@ export const Route = createFileRoute("/api/resumes/")({
           if (typeof id !== "string") {
             throw new ResumeVaultError(400, "Resume body must include string id");
           }
-          return Response.json({ resume: await saveResume(id, body) }, { status: 201 });
+          return Response.json({ resume: await createResume(id, body) }, { status: 201 });
         } catch (error) {
           return errorResponse(error);
         }
