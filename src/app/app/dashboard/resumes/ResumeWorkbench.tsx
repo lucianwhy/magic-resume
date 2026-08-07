@@ -15,6 +15,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { getConfig, getFileHandle } from "@/utils/fileSystem";
+import { preloadFontFamily } from "@/utils/fonts";
+import { preloadFontFamily } from "@/utils/fonts";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useAIConfigStore } from "@/store/useAIConfigStore";
 import { DEFAULT_TEMPLATES } from "@/config";
@@ -107,6 +109,48 @@ export const ResumeWorkbench = () => {
 
         importCloudResume();
     }, []);
+
+    useEffect(() => {
+        const fontFamilies = Array.from(
+            new Set(
+                Object.values(resumes)
+                    .map((resume) => resume.globalSettings?.fontFamily)
+                    .filter(Boolean)
+            )
+        );
+
+        if (fontFamilies.length === 0) return;
+
+        let cancelled = false;
+        const warmFonts = () => {
+            if (cancelled) return;
+            fontFamilies.forEach((fontFamily) => {
+                preloadFontFamily(fontFamily).catch((error) => {
+                    console.warn("Failed to preload resume font:", error);
+                });
+            });
+        };
+
+        const supportsIdleCallback =
+            typeof window !== "undefined" &&
+            typeof window.requestIdleCallback === "function";
+        const idleCallback = supportsIdleCallback
+            ? window.requestIdleCallback(warmFonts, { timeout: 2500 })
+            : globalThis.setTimeout(warmFonts, 1000);
+
+        return () => {
+            cancelled = true;
+            if (
+                supportsIdleCallback &&
+                typeof window !== "undefined" &&
+                typeof window.cancelIdleCallback === "function"
+            ) {
+                window.cancelIdleCallback(idleCallback as number);
+            } else {
+                globalThis.clearTimeout(idleCallback);
+            }
+        };
+    }, [resumes]);
 
     const handleCreateFromModal = (templateId: string | null) => {
         const isBlank = !templateId;
@@ -455,7 +499,6 @@ export const ResumeWorkbench = () => {
                                         resume={resume}
                                         t={t}
                                         locale={locale}
-                                        setActiveResume={setActiveResume}
                                         router={router}
                                         deleteResume={deleteResume}
                                         duplicateResume={duplicateResume}
