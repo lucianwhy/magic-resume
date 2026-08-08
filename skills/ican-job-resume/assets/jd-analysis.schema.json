@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["source", "must_have", "preferred", "responsibilities", "keywords"],
+  "properties": {
+    "source": {"type": "string"},
+    "role": {"type": "string"},
+    "must_have": {"type": "array", "items": {"type": "string"}},
+    "preferred": {"type": "array", "items": {"type": "string"}},
+    "responsibilities": {"type": "array", "items": {"type": "string"}},
+    "constraints": {"type": "array", "items": {"type": "string"}},
+    "keywords": {"type": "array", "items": {"type": "string"}}
+  }
+}

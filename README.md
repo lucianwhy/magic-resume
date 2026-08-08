@@ -1,37 +1,22 @@
-<div align="center">
+# ✨ Magic Resume
 
-# ✨ Magic Resume ✨
+现代化在线简历编辑器。支持实时预览、主题定制、自动保存、PDF 导出及响应式展示。本仓库还提供团队使用的职业知识库与岗位定制简历 Skill。
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-![TanStack Start](https://img.shields.io/badge/TanStack_Start-latest-black)
-![Framer Motion](https://img.shields.io/badge/Framer_Motion-10.0-purple)
+## 项目截图
 
-<a href="https://trendshift.io/repositories/13077" target="_blank"><img src="https://trendshift.io/api/badge/repositories/13077" alt="Magic Resume | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+<img width="1920" height="1440" alt="Magic Resume 编辑器截图" src="https://github.com/user-attachments/assets/4667e49a-7bf2-4379-9390-725e42799dc7" />
 
-[简体中文](./README.zh-CN.md) | English
+## 功能
 
-</div>
+- 实时编辑与预览
+- 多模板与自定义主题
+- 深色模式与响应式布局
+- 自动保存与本地存储
+- PDF 导出
+- AI 辅助写作
+- 一页简历排版
 
-Magic Resume is a modern online resume editor that makes creating professional resumes simple and enjoyable. Built with TanStack Start and Framer Motion, it supports real-time preview and custom themes.
-
-## 📸 Screenshots
-
-<img width="1920" height="1440" alt="336_1x_shots_so" src="https://github.com/user-attachments/assets/18969a17-06f8-4a4b-94eb-284ba8442620" />
-
-
-## ✨ Features
-
-- 🚀 Built with TanStack Start
-- 💫 Smooth animations (Framer Motion)
-- 🎨 Custom theme support
-- 📱 Responsive design
-- 🌙 Dark mode
-- 📤 Export to PDF
-- 🔄 Real-time preview
-- 💾 Auto-save
-- 🔒 Local storage
-
-## 🛠️ Tech Stack
+## 技术栈
 
 - TanStack Start
 - TypeScript
@@ -42,116 +27,63 @@ Magic Resume is a modern online resume editor that makes creating professional r
 - Shadcn/ui
 - Lucide Icons
 
-## 🚀 Quick Start
-
-1. Clone the project
+## 快速开始
 
 ```bash
-git clone git@github.com:JOYCEQL/magic-resume.git
+git clone https://github.com/lucianwhy/magic-resume.git
 cd magic-resume
-```
-
-2. Install dependencies
-
-```bash
 pnpm install
-```
-
-3. Start development server
-
-```bash
 pnpm dev
 ```
 
-4. Open browser and visit `http://localhost:3000`
+启动后访问 `http://localhost:3000`。
 
-## 📦 Build and Deploy
+## 构建与部署
+
+构建项目：
 
 ```bash
 pnpm build
 ```
 
-
-## 🐳 Docker Deployment
-
-### Docker Compose
-
-1. Ensure you have Docker and Docker Compose installed
-
-2. Run the following command in the project root directory:
+使用 Docker Compose：
 
 ```bash
 docker compose up -d
 ```
 
-This will:
+## 安装团队 Skill
 
-- Automatically build the application image
-- Start the container in the background
+仓库内的 [`skills`](./skills) 目录包含两个可共享的 Codex Skill：
 
+- [`ican-career-knowledge-base`](./skills/ican-career-knowledge-base)：沉淀个人经历、成果、偏好和职业目标，作为可追溯的职业事实库。
+- [`ican-job-resume`](./skills/ican-job-resume)：基于职位 JD 和已验证事实生成新的定制简历版本，不覆盖原简历。
 
-## 📝 License and Commercial Use
+队员克隆仓库后，在 PowerShell 执行以下命令即可安装到本机 Codex：
 
-The source code of this project is open-sourced under the **Apache 2.0** license, but with **strict commercial use restrictions**:
+```powershell
+Copy-Item .\skills\ican-career-knowledge-base "$env:USERPROFILE\.codex\skills\" -Recurse -Force
+Copy-Item .\skills\ican-job-resume "$env:USERPROFILE\.codex\skills\" -Recurse -Force
+```
 
-- **Free for Personal Use**: Free to use purely for personal, non-commercial purposes (e.g., personal learning, creating your own resume).
-- **Commercial License Required**: Unauthorized commercial use is strictly prohibited. Any organization or individual that provides it as a service (SaaS/PaaS, etc.) to the public for profit, uses it for enterprise commercial operations, or conducts secondary commercial development, **must obtain a commercial license, regardless of whether the source code has been modified**.
+完成后重启 Codex 或新开任务，使其重新加载 Skill。需要更新时，在仓库中拉取最新代码后重复以上命令。
 
-Please see the [LICENSE](LICENSE) file for detailed terms.
+也可直接把下面提示词发给 Codex：
 
-## 🗺️ Roadmap
+```text
+请从 https://github.com/lucianwhy/magic-resume/tree/master/skills 安装
+ican-career-knowledge-base 和 ican-job-resume 两个 Skill 到我的 Codex Skills 目录，
+保留原有 Skill，并告诉我安装结果。
+```
 
-- [x] AI-assisted writing
-- [x] Multi-language support
-- [ ] Support for more resume templates
-- [ ] Support for more export formats
-- [ ] Import PDF, Markdown, etc.
-- [x] Custom model
-- [x] Auto one page
-- [ ] Online resume hosting
+## 使用说明
 
-## 📈 Star History
+职业知识库 Skill 用于记录和检索可信的职业事实；岗位定制简历 Skill 只会使用可追溯的事实，并为每次改写创建新版本。不要用它补造职责、技术、指标或成果。
 
-<a href="https://star-history.com/#JOYCEQL/magic-resume&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=JOYCEQL/magic-resume&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=JOYCEQL/magic-resume&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=JOYCEQL/magic-resume&type=Date" />
- </picture>
-</a>
+## 开源许可
 
-## 📞 Contact
+许可与使用条款见 [LICENSE](./LICENSE)。
 
-You can follow the latest updates via:
+## 支持项目
 
-- Author: Siyue
-- X: @GuangzhouY81070
-- Discord: Join our community https://discord.gg/9mWgZrW3VN
-- Email: 18806723365@163.com
-
-
-- Project Homepage: https://github.com/JOYCEQL/magic-resume
-
-## 🌟 Support
-
-If you find this project helpful, please give it a star ⭐️
-
-## ❤️ Sponsors
-
-<div align="center">
-  <h3>Sponsors</h3>
-  <p>If you sponsored this project but are not listed here, please contact me.</p>
-  <p>
-    <a href="https://github.com/yj147">
-      <img src="https://github.com/yj147.png?size=40" width="40" height="40" alt="@yj147" />
-    </a>
-    <a href="https://github.com/someone1128">
-      <img src="https://github.com/someone1128.png?size=40" width="40" height="40" alt="@someone1128" />
-    </a>
-    <!-- Add more sponsors here:
-    <a href="https://github.com/<username>">
-      <img src="https://github.com/<username>.png?size=40" width="40" height="40" alt="@<username>" />
-    </a>
-    -->
-  </p>
-</div>
+如果项目对你有帮助，欢迎 Star。

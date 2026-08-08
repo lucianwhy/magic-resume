@@ -1,0 +1,4 @@
+interface:
+  display_name: "ICAN 个人职业知识库"
+  short_description: "通过对话采集职业事实、偏好与证据，沉淀可复用个人职业知识库"
+  default_prompt: "Use $ican-career-knowledge-base to capture my career facts and identify the most valuable next question."
