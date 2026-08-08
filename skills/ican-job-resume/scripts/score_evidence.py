@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check that requested fact IDs exist in an evidence-ledger Markdown table."""
+"""检查请求的事实 ID 是否存在于 Markdown 格式的证据台账中。"""
 import argparse
 import json
 import re
@@ -9,7 +9,7 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ledger", required=True, type=Path)
-    parser.add_argument("--fact-ids", required=True, help="comma-separated fact IDs")
+    parser.add_argument("--fact-ids", required=True, help="以逗号分隔的事实 ID")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     text = args.ledger.read_text(encoding="utf-8")

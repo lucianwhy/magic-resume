@@ -1,21 +1,21 @@
-# Record schema
+# 记录结构
 
-Use Markdown records with YAML frontmatter. Keep original material in sources and derived records concise.
+使用带 YAML frontmatter 的 Markdown 记录。原始材料保存在 `sources`，派生记录保持简洁。
 
-## Root layout
+## 根目录布局
 
 ~~~
 personal-knowledge-base/
-  sources/          # original resumes, user messages, files, links, image assets
-  facts/            # one record per experience, education, skill, achievement, or identity item
-  narratives/       # role-specific reorganizations of confirmed facts
-  preferences.md    # city, role, industry, work style, constraints, red lines
-  goals.md          # desired direction, learning plans, long-term goals
-  open-loops.md     # unanswered high-value questions
-  knowledge-base.md # concise index and retrieval map
+  sources/          # 原始简历、用户消息、文件、链接、图片素材
+  facts/            # 每段经历、教育、技能、成就或身份信息各一条记录
+  narratives/       # 针对岗位重新组织的已确认事实
+  preferences.md    # 城市、岗位、行业、工作方式、约束和底线
+  goals.md          # 目标方向、学习计划和长期目标
+  open-loops.md     # 尚未回答的高价值问题
+  knowledge-base.md # 简洁索引和检索地图
 ~~~
 
-## Fact record
+## 事实记录
 
 ~~~
 ---
@@ -35,31 +35,30 @@ tags:
 updated: 2026-08-06
 ---
 
-# Name
+# 名称
 
-## Confirmed claims
-- Atomic claim with source evidence.
+## 已确认声明
+- 带来源证据的原子声明。
 
-## Evidence
-- Link, document path, screenshot, or user statement.
+## 证据
+- 链接、文档路径、截图或用户陈述。
 
-## Open loops
-- Only questions that materially change future usage.
+## 待补问题
+- 仅记录会实质改变未来使用方式的问题。
 ~~~
 
-## Classification
+## 分类
 
-| Type | Meaning | Example |
-|---|---|---|
-| fact | Observable experience, result, artifact, date, or responsibility | “独立完成部署” |
-| preference | Current choice or constraint | “实习优先郑州中原区” |
-| goal | Desired future direction | “想投 AI 智能体开发” |
-| reflection | Personal judgment, value, or lesson | “更喜欢贴近用户的问题” |
-| unverified | Claim needing evidence or clarification | “粉丝 5000+，统计口径待补” |
+| 类型 | 含义 | 示例 |
+| --- | --- | --- |
+| `fact` | 可观察的经历、结果、产物、日期或职责 | “独立完成部署” |
+| `preference` | 当前选择或约束 | “实习优先郑州中原区” |
+| `goal` | 期望的未来方向 | “想投 AI 智能体开发” |
+| `reflection` | 个人判断、价值观或经验总结 | “更喜欢贴近用户的问题” |
+| `unverified` | 需要证据或澄清的主张 | “粉丝 5000+，统计口径待补” |
 
-## Privacy
+## 隐私级别
 
-- private: store only in the knowledge base.
-- interview-only: may use in a private interview-prep context.
-- public-with-approval: require user approval before external resume or profile use.
-
+- `private`：仅存于知识库。
+- `interview-only`：仅可在私密面试准备场景使用。
+- `public-with-approval`：用于外部简历或公开资料前，必须取得用户同意。

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Report structural JSON differences; never modify either input."""
+"""输出 JSON 结构差异；绝不修改任一输入文件。"""
 import argparse
 import json
 from pathlib import Path

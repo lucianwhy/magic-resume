@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a transparent, conservative JD analysis from UTF-8 text."""
+"""从 UTF-8 文本生成透明、保守的 JD 分析结果。"""
 import argparse
 import json
 import re

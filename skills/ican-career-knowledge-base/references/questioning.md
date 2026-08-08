@@ -1,48 +1,47 @@
-# High-value questioning
+# 高价值追问
 
-Ask one question only. Select it using:
+每轮只问一个问题，按下面标准选择：
 
-importance to current target × specificity gained × evidence likelihood × non-redundancy.
+当前目标的重要性 × 可获得的具体程度 × 获得证据的可能性 × 不重复性。
 
-## Experience
+## 经历
 
-Prioritize: role and ownership → concrete deliverable → result/evidence → technical or business decision → time and context.
+优先顺序：角色与归属 → 具体交付物 → 结果/证据 → 技术或业务决策 → 时间与背景。
 
-Good question:
+示例问题：
 
 “在这段实习里，哪一个交付物是你独立负责并且能拿出证据的？”
 
-## Project
+## 项目
 
-Prioritize: user problem → end-to-end flow → personal module boundary → difficult decision → result or validation → evidence.
+优先顺序：用户问题 → 端到端流程 → 个人模块边界 → 困难决策 → 结果或验证 → 证据。
 
-Good question:
+示例问题：
 
 “用户完成一次模拟直播练习时，先输入什么，系统做什么，最后得到什么结果？”
 
-## Achievement or content operation
+## 成就或内容运营
 
-Prioritize: metric definition → time range → personal action → repeatable method → representative artifact.
+优先顺序：指标定义 → 时间范围 → 个人行动 → 可复用方法 → 代表性产物。
 
-Good question:
+示例问题：
 
 “5000+ 粉丝统计截至何时？你亲自负责选题、制作、发布、数据复盘中的哪些环节？”
 
-## Preference or goal
+## 偏好或目标
 
-Prioritize: reason → trade-off → time horizon → constraint → observable action.
+优先顺序：原因 → 取舍 → 时间范围 → 约束 → 可观察行动。
 
-Good question:
+示例问题：
 
 “你优先杭州和深圳，是因为行业机会、生活偏好，还是已有可利用的资源？”
 
-## Audit
+## 审计
 
-Prefer gaps that can change a high-stakes output:
+优先补足会改变高风险输出的缺口：
 
-1. missing project ownership or evidence;
-2. missing result definition or time range;
-3. missing target role and constraints;
-4. missing interview-ready story;
-5. optional biography details.
-
+1. 缺少项目归属或证据；
+2. 缺少结果定义或时间范围；
+3. 缺少目标岗位和约束；
+4. 缺少可用于面试的完整故事；
+5. 可选的个人履历细节。

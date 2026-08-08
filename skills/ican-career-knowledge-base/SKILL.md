@@ -1,71 +1,68 @@
 ---
 name: ican-career-knowledge-base
-description: Build, enrich, query, and maintain a user's long-lived personal career knowledge base through natural conversation. Use when the user shares or asks about projects, internships, education, skills, achievements, content creation, career goals, target roles or cities, work values, learning plans, interview reflections, or asks what information to collect, emphasize, omit, or verify for future resumes and interviews.
+description: 通过自然对话建立、补充、查询和维护长期个人职业知识库。用户分享或询问项目、实习、教育、技能、成就、内容创作、职业目标、目标岗位或城市、工作价值观、学习计划、面试复盘，或询问未来简历、面试中应收集、强调、略去或核验哪些信息时使用。
 ---
 
-# ICAN Career Knowledge Base
+# ICAN 个人职业知识库
 
-Maintain a source-of-truth for career facts and personal career context. Do not treat it as a resume writer. Preserve more information than any one resume uses, then make later selection explainable.
+维护职业事实和个人职业背景的唯一可信来源。不要把它当作简历写作器。保留的信息应多于任一份简历所用的信息，使后续取舍可解释。
 
-## Start
+## 开始前
 
-1. Resolve the knowledge-base root from user context or a supplied path.
-2. If no root exists, ask where to create it. Do not silently choose a user-data location.
-3. If a root exists, read its overview, open loops, and only records relevant to the current topic.
-4. Read [record-schema.md](references/record-schema.md) before creating or changing records.
-5. Read [questioning.md](references/questioning.md) when choosing a follow-up question.
+1. 从用户上下文或提供的路径确定知识库根目录。
+2. 根目录不存在时，询问用户创建位置；不得擅自选择用户数据目录。
+3. 根目录存在时，读取概览、待补问题和当前主题相关记录。
+4. 创建或修改记录前，读取 [record-schema.md](references/record-schema.md)。
+5. 选择追问问题时，读取 [questioning.md](references/questioning.md)。
 
-## Choose a mode
+## 选择模式
 
-| User intent | Mode | Action |
-|---|---|---|
-| Shares an experience, preference, goal, file, or reflection | Capture | Extract and store claims. |
-| Asks what to add or what is missing | Audit | Find high-value gaps. |
-| Asks whether an experience suits a role or interview | Retrieve | Explain relevant facts and missing proof. |
-| Asks to revise or remove a record | Curate | Preserve source history and update the derived record. |
+| 用户意图 | 模式 | 操作 |
+| --- | --- | --- |
+| 分享经历、偏好、目标、文件或复盘 | 采集 | 提取并保存原子声明。 |
+| 询问应补什么或缺什么 | 审计 | 找出高价值缺口。 |
+| 询问经历是否适合某岗位或面试 | 检索 | 说明相关事实和缺少的证明。 |
+| 要求修改或删除记录 | 整理 | 保留来源历史，更新派生记录。 |
 
-## Capture workflow
+## 采集流程
 
-1. Accept natural language, files, links, screenshots, and existing resumes. Do not force a long form.
-2. Extract atomic claims. Classify each as fact, preference, goal, reflection, or unverified claim.
-3. Preserve supplied material under sources. Record its path or link in every derived claim.
-4. Create or update the smallest relevant record. Do not merge unrelated experiences into one record.
-5. Tag each record with possible role lenses such as engineering, product, delivery, collaboration, growth, or user insight. Tags describe possible retrieval lenses, not stronger claims.
-6. Add an open loop only when missing information would materially improve a future resume, interview, or decision.
-7. Ask at most one follow-up question per turn. Choose the highest-information-gain question, not the first empty field.
-8. Report what was stored, what it can later support, and the one next question.
+1. 接受自然语言、文件、链接、截图和现有简历；不强制长表单。
+2. 提取原子声明，区分事实、偏好、目标、反思和未核验声明。
+3. 将用户提供材料保留在 `sources` 下；每条派生声明都记录其路径或链接。
+4. 创建或更新最小相关记录；不要把无关经历合并为一条。
+5. 为记录标注工程、产品、交付、协作、增长或用户洞察等可能的岗位视角。标签仅用于检索，不代表更强的事实主张。
+6. 仅当缺失信息会实质提升未来简历、面试或决策时，才新增待补问题。
+7. 每轮最多追问一个问题。选择信息增益最高的问题，不选择第一个空字段。
+8. 报告已存内容、可支持的后续用途及一个下一步问题。
 
-## Evidence and integrity
+## 证据与真实性
 
-- Treat user statements and attached materials as sources; never invent responsibilities, technologies, metrics, awards, employers, or dates.
-- Keep facts, preferences, goals, and opinions distinct.
-- Mark missing detail as unknown or pending. Do not interpret an absent record as a negative fact.
-- Preserve original source wording when a number, title, date, or claim may matter.
-- Separate candidate narratives from confirmed facts. A narrative may reorganize facts but may not add claims.
-- Mark contact details, photos, precise addresses, documents, and private reflections as sensitive. Default them to private and exclude them from future public outputs unless the user asks.
+- 将用户陈述和附件视为来源；不得虚构职责、技术、指标、奖项、雇主或日期。
+- 明确区分事实、偏好、目标和观点。
+- 缺失细节标为“未知”或“待补”；不能把没有记录理解成负面事实。
+- 数字、职称、日期或主张可能重要时，保留来源原文。
+- 将候选叙事与已确认事实分开。叙事可以重组事实，但不能新增主张。
+- 联系方式、照片、精确地址、文档和私人反思属于敏感信息。默认设为私有，除非用户要求，否则不用于未来公开输出。
 
-## Retrieval rules
+## 检索规则
 
-When asked about a role, JD, resume, interview, or learning plan:
+用户询问岗位、JD、简历、面试或学习计划时：
 
-1. Retrieve facts with matching role lenses and evidence.
-2. State what to emphasize, what to mention briefly, and what to omit for this use case.
-3. Explain why using the user's stated goals and the role requirements.
-4. Surface only gaps that block a credible answer. Missing keywords never prove missing ability.
-5. Hand off to a resume-tailoring or interview-coaching workflow for final output. Do not silently edit a resume.
+1. 检索岗位视角和证据匹配的事实。
+2. 说明本次该重点写什么、简要提什么、略去什么。
+3. 结合用户目标和岗位要求说明原因。
+4. 仅提出会阻碍可信回答的缺口；缺少关键词不等于缺少能力。
+5. 最终输出交由简历定制或面试辅导流程完成；不得静默修改简历。
 
-## Conversation style
+## 对话方式
 
-- Start from the user's own story. Ask concrete questions about choices, ownership, results, and evidence.
-- Prefer: “你负责的模拟直播模块，学生从进入到完成练习，会经历哪几个步骤？” over generic requests for more detail.
-- Treat career goals, cities, work values, and learning plans as useful first-class context, not filler.
-- Do not interrogate. Let the user skip any item and capture it later.
+- 从用户自己的故事出发，围绕选择、归属、结果和证据提具体问题。
+- 优先问：“你负责的模拟直播模块，学生从进入到完成练习，会经历哪几个步骤？”而不是泛泛要求补充信息。
+- 将职业目标、城市、工作价值观和学习计划视为一等背景信息，而非填充内容。
+- 不要审问用户。用户可以跳过任一项，稍后再采集。
 
-## Required response after every write
+## 每次写入后的必答内容
 
-Return:
-
-1. Stored records or updated claims.
-2. Retrieval lenses newly enabled.
-3. One highest-value follow-up question, unless no important gap remains.
-
+1. 已存记录或已更新的声明。
+2. 新启用的检索视角。
+3. 一个信息价值最高的追问；若无重要缺口则不追问。
