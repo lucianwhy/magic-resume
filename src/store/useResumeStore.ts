@@ -13,7 +13,7 @@ import {
   MenuSection,
   Certificate,
 } from "../types/resume";
-import { DEFAULT_TEMPLATES } from "@/config";
+import { DEFAULT_TEMPLATES } from "@/components/templates/registry";
 import {
   initialResumeState,
   initialResumeStateEn,

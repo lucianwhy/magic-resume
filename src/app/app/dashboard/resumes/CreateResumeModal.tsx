@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DEFAULT_TEMPLATES } from "@/config";
+import { DEFAULT_TEMPLATES } from "@/components/templates/registry";
 import { initialResumeState } from "@/config/initialResumeData";
 import ResumeTemplateComponent from "@/components/templates";
 import { useTemplateSnapshots } from "@/hooks/useTemplateSnapshots";

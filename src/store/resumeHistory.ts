@@ -1,4 +1,4 @@
-import { DEFAULT_TEMPLATES } from "@/config";
+import { DEFAULT_TEMPLATES } from "@/components/templates/registry";
 import type { ResumeData } from "../types/resume";
 
 export const HISTORY_LIMIT = 50;

@@ -1,6 +1,6 @@
 import { generateUUID } from "@/utils/uuid";
 import { initialResumeState } from "@/config/initialResumeData";
-import { DEFAULT_TEMPLATES } from "@/config";
+import { DEFAULT_TEMPLATES } from "@/components/templates/registry";
 
 export const escapeHtml = (value: string) =>
   value

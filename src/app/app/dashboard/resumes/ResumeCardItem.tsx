@@ -19,7 +19,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import ResumeTemplateComponent from "@/components/templates";
-import { DEFAULT_TEMPLATES } from "@/config";
+import { DEFAULT_TEMPLATES } from "@/components/templates/registry";
 import { cn } from "@/lib/utils";
 import { normalizeFontFamily } from "@/utils/fonts";
 import { Edit2, Copy, Trash2 } from "lucide-react";

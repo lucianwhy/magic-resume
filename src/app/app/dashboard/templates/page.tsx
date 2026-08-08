@@ -3,7 +3,7 @@ import { useLocale, useTranslations } from "@/i18n/compat/client";
 import { motion } from "framer-motion";
 import { useRouter } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
-import { DEFAULT_TEMPLATES } from "@/config";
+import { DEFAULT_TEMPLATES } from "@/components/templates/registry";
 import { useResumeStore } from "@/store/useResumeStore";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

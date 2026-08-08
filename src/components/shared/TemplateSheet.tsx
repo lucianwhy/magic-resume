@@ -10,7 +10,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet-no-overlay";
 import { cn } from "@/lib/utils";
-import { DEFAULT_TEMPLATES } from "@/config";
+import { DEFAULT_TEMPLATES } from "@/components/templates/registry";
 import { useResumeStore } from "@/store/useResumeStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTemplateSnapshots } from "@/hooks/useTemplateSnapshots";
