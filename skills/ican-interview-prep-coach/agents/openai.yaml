@@ -1,4 +1,4 @@
 interface:
   display_name: "面试前培训教练"
-  short_description: "面向技术项目压力和业务阶段的岗位定制面试前系统培训与能力补缺"
-  default_prompt: "使用 $ican-interview-prep-coach，根据我的 JD、简历和知识库，为技术面做面试前培训。"
+  short_description: "面向技术项目综合压力和业务阶段的岗位定制面试前培训"
+  default_prompt: "使用 $ican-interview-prep-coach，根据我的 JD、简历和知识库，为技术与项目综合面做面试前培训。"
