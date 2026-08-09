@@ -12,6 +12,14 @@ description: 根据岗位 JD，从个人职业知识库检索可验证事实，�
 - 永不静默覆盖原简历、原 JSON 或云端简历；新版本使用唯一 ID。
 - 导出只在真实渲染链路验收通过后交付。
 
+## 工作区入口
+
+1. 优先使用用户明确给出的 ICAN 工作区；否则从当前目录逐级向上查找 `.ican/project.json`。
+2. 找不到项目标识时调用 `$ican-init`。初始化目录、`AGENTS.md`、`CLAUDE.md` 和 Git 隐私规则使用安全默认值，不为这些事项打断用户。
+3. 读取 `.ican/AI_CONTEXT.md` 和 `.ican/state.json`，再查找知识库、源简历和目标 JD。
+4. 用户有简历但尚未导入时，先交给 `$ican-career-knowledge-base` 作为来源导入和核验；用户没有简历时，先由该 Skill 分步建立基础职业档案。
+5. 目标岗位或简历方向未知时，只问这一个关键问题；已经从 JD 或上下文得知时不得重复询问。
+
 ## 资源路由
 
 按任务读取，不要一次加载全部资料：
@@ -20,7 +28,7 @@ description: 根据岗位 JD，从个人职业知识库检索可验证事实，�
 | --- | --- | --- |
 | 分析 JD | `references/jd-taxonomy.md` | `scripts/parse_jd.py` |
 | 判断表述能否写入 | `references/evidence-ledger.md`、`references/project-facts.md` | `scripts/score_evidence.py` |
-| 生成或改写候选稿 | `references/writing-rubric.md`、`references/resume-schema.md` | `scripts/diff_resume.py` |
+| 生成匹配报告、关键词分级或改写候选稿 | `references/writing-rubric.md`、`references/resume-schema.md`、`references/tailoring-deliverables.md` | `scripts/diff_resume.py` |
 | 云端创建、同步、导出 | `references/magic-resume-cli.md` | — |
 | 页数、PDF、PNG、网页一致性 | `references/render-acceptance.md` | `scripts/verify_export.py` |
 
@@ -47,7 +55,7 @@ python "$env:USERPROFILE\.codex\skills\ican-job-resume\scripts\parse_jd.py" --in
 - `needs_confirmation`：可能具备，需用户确认。
 - `unsupported`：无证据，不写入简历。
 
-生成候选稿前，先给出匹配报告：强匹配、可改写点、待确认点、不可写点。
+生成候选稿前，按 `references/tailoring-deliverables.md` 给出岗位要求—证据矩阵和关键词分级，再汇总强匹配、可改写点、待确认点、不可写点。
 
 ### 3. 生成新版本
 
@@ -57,7 +65,7 @@ python "$env:USERPROFILE\.codex\skills\ican-job-resume\scripts\parse_jd.py" --in
 wang-haoyue-ai-agent-engineer-v2
 ```
 
-每个变更保留：原文、候选文案、匹配 JD、`fact_ids`、风险。使用 `references/writing-rubric.md` 改写。不要以“补关键词”为由新增不存在的能力。
+每个变更按 `references/tailoring-deliverables.md` 保留改写矩阵和修改日志：原文、候选文案、匹配 JD、`fact_ids`、理由、风险。使用 `references/writing-rubric.md` 改写。不要以“补关键词”为由新增不存在的能力。
 
 运行差异检查：
 
@@ -107,9 +115,10 @@ python "$env:USERPROFILE\.codex\skills\ican-job-resume\scripts\verify_export.py"
 每次岗位定制至少交付：
 
 1. `jd-analysis.json`：岗位要求和关键词。
-2. `fit-report.md`：匹配、缺口、待确认、不可写项。
+2. `fit-report.md`：岗位要求—证据矩阵、关键词分级、匹配、缺口、待确认、不可写项。
 3. `targeted-resume.json`：新候选稿，不覆盖源文件。
-4. `resume-diff.json`：逐字段变更和 `fact_ids`。
-5. `validation-report.json`：证据和导出验收结果。
+4. `resume-diff.json`：逐字段改写矩阵和 `fact_ids`。
+5. `change-log.md`：修改内容、原因、证据、对应要求和遗留问题。
+6. `validation-report.json`：证据和导出验收结果。
 
 云端操作另交付：新简历 ID、源 ID、导出本地绝对路径、页数及验收结论。

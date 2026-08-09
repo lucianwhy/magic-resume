@@ -15,7 +15,7 @@
     "scss",
     "sass"
   ],
-  "typescript.tsdk": "./node_modules/typescript/lib",
+  "typescript.tsdk": "./apps/web/node_modules/typescript/lib",
   "search.exclude": {
     "**/node_modules": true,
     "dist": true,
@@ -48,7 +48,7 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "i18n-ally.localesPaths": [
-    "src/i18n",
-    "src/i18n/locales"
+    "apps/web/src/i18n",
+    "apps/web/src/i18n/locales"
   ]
 }

@@ -32,6 +32,21 @@ role_lenses:
 tags:
   - fastapi
   - education
+related_records:
+  - id: skill-rag
+    relation: demonstrates
+supports:
+  roles:
+    - ai-agent-engineer
+  interview_stages:
+    - technical
+    - project
+  resume_sections:
+    - projects
+open_loops:
+  - question: 使用了什么检索评估方法？
+    value: 区分实现经验与优化经验。
+    priority: high
 updated: 2026-08-06
 ---
 
@@ -62,3 +77,11 @@ updated: 2026-08-06
 - `private`：仅存于知识库。
 - `interview-only`：仅可在私密面试准备场景使用。
 - `public-with-approval`：用于外部简历或公开资料前，必须取得用户同意。
+
+## 可选关联字段
+
+- `related_records`：仅连接实质相关记录。每项包含稳定记录 `id` 和简短关系，例如 `part_of`、`demonstrates`、`evidence_for` 或 `related_to`。
+- `supports`：索引已确认事实可用于哪些目标岗位、面试阶段或简历模块。它只是检索提示，不代表公开授权。
+- `open_loops`：仅保存高价值待补问题，同时记录预期价值和优先级。不要把每个空字段都变成待补问题。
+
+创建这些字段或更新根索引前，读取 [linking-and-open-loops.md](linking-and-open-loops.md)。

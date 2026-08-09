@@ -29,9 +29,9 @@ Run from repository root:
 ```bash
 export MAGIC_RESUME_URL=https://resume.example.com
 export MAGIC_RESUME_API_KEY='same-as-RESUME_API_KEY'
-node scripts/magic-resume-cli.mjs list
-node scripts/magic-resume-cli.mjs get resume-001
-node scripts/magic-resume-cli.mjs patch resume-001 patch.json
+pnpm resume -- list
+pnpm resume -- get resume-001
+pnpm resume -- patch resume-001 patch.json
 ```
 
 Example `patch.json`:

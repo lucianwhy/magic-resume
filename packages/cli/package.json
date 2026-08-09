@@ -1,0 +1,16 @@
+{
+  "name": "@ican/magic-resume-cli",
+  "version": "2.0.7",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "magic-resume": "./src/magic-resume-cli.mjs"
+  },
+  "scripts": {
+    "start": "node src/magic-resume-cli.mjs",
+    "check": "node --check src/magic-resume-cli.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
