@@ -1,6 +1,6 @@
 ---
 name: interview-prep-coach
-description: 根据岗位 JD、简历和个人职业知识库，为技术面、项目面、压力面、HR/业务面提供分阶段的面试前培训。用于解释 AI/后端概念、梳理项目故事和证据、预演高压追问、准备求职沟通与补缺计划；不用于默认进行现场模拟面试。
+description: 根据岗位 JD、简历和个人职业知识库，为技术面、项目面、压力面、HR/业务面提供分阶段的面试前培训。用于解释 AI/后端概念、推荐短中长视频学习资源、梳理项目故事和证据、预演高压追问、准备求职沟通与补缺计划；不用于默认进行现场模拟面试。
 ---
 
 # 面试前培训教练
@@ -17,6 +17,7 @@ description: 根据岗位 JD、简历和个人职业知识库，为技术面、�
    - HR/业务面：`references/hr-business/`
 3. 优先从用户职业知识库、定制简历和 JD 取事实；将已证实、用户陈述、待确认、培训建议严格分开。
 4. 用 `scripts/build_training_plan.py --stage <stage>` 生成阶段训练清单；根据 JD 和用户问题调整其中主题。
+5. 用户要求视频、课程或外部学习资源时，读取 `references/common/video-learning.md`，再运行 `scripts/search_bilibili_videos.py`。先消除缩写歧义；不要仅按播放量推荐。
 
 ## 交付
 
