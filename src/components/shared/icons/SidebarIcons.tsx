@@ -1,4 +1,5 @@
 import React from "react";
+import { UserRound } from "lucide-react";
 
 interface IconProps {
   size?: number;
@@ -82,4 +83,16 @@ export const IconAI: React.FC<IconProps> = ({ size = 24, className, active }) =>
     <circle cx="32" cy="10" r="4" fill="#1890FF" />
     <rect x="5" y="28" width="8" height="8" rx="2" fill="#FA8C16" transform="rotate(25 9 32)" />
   </svg>
+);
+
+export const IconProfile: React.FC<IconProps> = ({
+  size = 24,
+  className,
+  active,
+}) => (
+  <UserRound
+    size={size}
+    className={`${active ? "text-primary" : "text-muted-foreground"} ${className ?? ""}`}
+    strokeWidth={active ? 2.5 : 2}
+  />
 );
