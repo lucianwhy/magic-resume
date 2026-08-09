@@ -9,22 +9,16 @@ from pathlib import Path
 
 
 STAGES = {
-    "technical": {
-        "reference_dir": "references/technical",
-        "goal": "解释概念、架构、取舍与排障，并映射到真实项目。",
-        "deliverables": ["能力地图", "概念卡", "项目映射", "一个 5 分钟练习"],
-        "defaults": ["RAG", "Agent 与工作流", "Function Call/MCP", "FastAPI 与数据库"],
-    },
-    "project": {
-        "reference_dir": "references/project",
-        "goal": "把项目写成可验证的工程故事，并形成优化建议。",
-        "deliverables": ["项目证据卡", "90 秒叙事", "优化建议", "待补事实"],
-        "defaults": ["职责边界", "架构与数据流", "关键取舍", "结果口径"],
+    "technical-project": {
+        "reference_dir": "references/technical-project",
+        "goal": "把技术原理、架构、取舍与排障映射到真实项目，形成可验证的工程故事。",
+        "deliverables": ["能力地图", "概念卡", "项目证据卡", "精简与展开版叙事", "取舍与待补事实"],
+        "defaults": ["RAG", "Agent 与工作流", "Function Call/MCP", "职责边界", "架构与数据流", "关键取舍", "结果口径"],
     },
     "pressure": {
         "reference_dir": "references/pressure",
         "goal": "审计高风险主张，准备诚实且有边界的回应。",
-        "deliverables": ["主张审计表", "追问树", "30 秒边界回答", "补证优先级"],
+        "deliverables": ["主张审计表", "追问树", "简短边界回答", "补证优先级"],
         "defaults": ["项目真实性", "指标口径", "技术深度", "经验与 JD 差距"],
     },
     "hr-business": {
@@ -33,6 +27,11 @@ STAGES = {
         "deliverables": ["自我介绍", "三个为什么", "协作故事", "条件沟通清单"],
         "defaults": ["岗位动机", "公司研究", "协作与挫折", "城市与入职"],
     },
+}
+
+STAGE_ALIASES = {
+    "technical": "technical-project",
+    "project": "technical-project",
 }
 
 CAPABILITY_LEVELS = {
@@ -71,15 +70,17 @@ TRAINING_DESIGN = {
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--stage", choices=sorted(STAGES), required=True)
+    parser.add_argument("--stage", choices=sorted(set(STAGES) | set(STAGE_ALIASES)), required=True)
     parser.add_argument("--output", type=Path, help="Optional JSON output path")
     args = parser.parse_args()
 
+    canonical_stage = STAGE_ALIASES.get(args.stage, args.stage)
     plan = {
-        "stage": args.stage,
+        "stage": canonical_stage,
+        "requested_stage": args.stage,
         "capability_levels": CAPABILITY_LEVELS,
         "training_design": TRAINING_DESIGN,
-        **STAGES[args.stage],
+        **STAGES[canonical_stage],
     }
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
