@@ -1,157 +1,185 @@
-<div align="center">
+# ICAN 职业助手
 
-# ✨ Magic Resume ✨
+ICAN 是一套可以交给 Codex、Claude Code 等 AI Agent 使用的职业工作流，同时提供 Magic Resume 网页版和命令行接口。
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-![TanStack Start](https://img.shields.io/badge/TanStack_Start-latest-black)
-![Framer Motion](https://img.shields.io/badge/Framer_Motion-10.0-purple)
+它覆盖四项连续任务。
 
-<a href="https://trendshift.io/repositories/13077" target="_blank"><img src="https://trendshift.io/api/badge/repositories/13077" alt="Magic Resume | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+- 初始化独立职业工作区
+- 记录个人经历、能力证据和职业知识库
+- 根据岗位 JD 生成新简历，同时保留原简历
+- 针对技术面、项目面、压力面和 HR／业务面进行面试前培训
 
-[简体中文](./README.zh-CN.md) | English
+个人简历和职业资料保存在项目仓库之外的 ICAN 工作区。代码、Skill、用户数据互不混放。
 
-</div>
+## 两种使用方式
 
-Magic Resume is a modern online resume editor that makes creating professional resumes simple and enjoyable. Built with TanStack Start and Framer Motion, it supports real-time preview and custom themes.
+### Agent 加 CLI
 
-## 📸 Screenshots
+Codex 或 Claude Code 加载 `skills/` 中的 Skill，再通过 `packages/cli/` 调用 Magic Resume 服务。整个简历读取、创建和更新过程可以在命令行完成，不需要模拟点击网页。
 
-<img width="1920" height="1440" alt="336_1x_shots_so" src="https://github.com/user-attachments/assets/18969a17-06f8-4a4b-94eb-284ba8442620" />
+```text
+Codex 或 Claude Code
+        ↓
+    ICAN Skill
+        ↓
+Magic Resume CLI
+        ↓
+  Web HTTP API
+```
 
+### 网页版
 
-## ✨ Features
+`apps/web/` 提供 Magic Resume 网页界面和 HTTP API。用户可以在浏览器中编辑、预览和导出简历。
 
-- 🚀 Built with TanStack Start
-- 💫 Smooth animations (Framer Motion)
-- 🎨 Custom theme support
-- 📱 Responsive design
-- 🌙 Dark mode
-- 📤 Export to PDF
-- 🔄 Real-time preview
-- 💾 Auto-save
-- 🔒 Local storage
+本地启动后访问 [http://127.0.0.1:3000/app/dashboard/resumes](http://127.0.0.1:3000/app/dashboard/resumes)。
 
-## 🛠️ Tech Stack
+## 安装 ICAN Skills
 
-- TanStack Start
-- TypeScript
-- Motion
-- Tiptap
-- Tailwind CSS
-- Zustand
-- Shadcn/ui
-- Lucide Icons
+需要 Node.js 20 及以上版本、Git 和 pnpm 10。
 
-## 🚀 Quick Start
+先克隆 `why` 分支并安装依赖。
 
-1. Clone the project
-
-```bash
-git clone git@github.com:JOYCEQL/magic-resume.git
+```powershell
+git clone --branch why https://github.com/lucianwhy/magic-resume.git
 cd magic-resume
+pnpm install --frozen-lockfile
 ```
 
-2. Install dependencies
+### 安装到 Codex
 
-```bash
-pnpm install
+```powershell
+pnpm install:skills
 ```
 
-3. Start development server
+Skill 默认安装到 `%USERPROFILE%\.codex\skills`。安装后重启 Codex 或开始一个新任务，让 Agent 重新发现 Skill。
 
-```bash
+### 安装到 Claude Code 或 cc-switch
+
+```powershell
+pnpm install:skills -- --target cc-switch
+```
+
+Skill 会安装到 `%USERPROFILE%\.cc-switch\skills`。
+
+### 安装到自定义目录
+
+```powershell
+pnpm install:skills -- --target "D:\my-agent\skills"
+```
+
+如果目标目录中已有同名 Skill，安装程序会停止，避免静默覆盖。确认要更新时运行下面命令。
+
+```powershell
+pnpm install:skills -- --target codex --force
+```
+
+安装内容包括四个 Skill。
+
+| Skill | 用途 |
+| --- | --- |
+| `ican-init` | 初始化或修复 ICAN 职业工作区 |
+| `ican-career-knowledge-base` | 记录和查询个人经历、技能、证据与待补信息 |
+| `ican-job-resume` | 根据 JD 创建有事实依据的新简历，保留原版本 |
+| `ican-interview-prep-coach` | 针对四轮面试开展面试前培训 |
+
+## 可以直接复制的提示词
+
+不需要记命令。安装完成后，把下面任意一段发给 Codex 或 Claude Code。
+
+### 第一次使用
+
+```text
+使用 ican-init 在当前目录初始化我的职业工作区。目录位置和 Git 隐私保护使用默认设置。完成后告诉我应该导入已有简历，还是从零开始建立资料。
+```
+
+### 导入已有简历和资料
+
+```text
+使用 ican-init 和 ican-career-knowledge-base 初始化这个职业项目。我已经有简历，请引导我导入，并把简历中的内容区分为已确认事实、个人陈述和待确认信息。不要把不确定内容直接当成事实。
+```
+
+### 没有简历，从零开始
+
+```text
+使用 ican-init 创建职业工作区。我目前没有简历，请使用 ican-career-knowledge-base 一步步询问我的教育经历、项目、技能、成果和目标岗位，先建立可以核验的职业档案。
+```
+
+### 根据岗位制作新简历
+
+```text
+使用 ican-job-resume，根据我提供的岗位 JD、原简历和职业知识库制作一份岗位定制简历。原简历必须保持不变，新建一个版本。只写有证据的内容，缺少证据的内容标记为待确认。需要写入 Magic Resume 时，全程使用 CLI。
+```
+
+### 开始面试前培训
+
+```text
+使用 ican-interview-prep-coach，读取我的目标岗位 JD、定制简历和职业知识库。先判断我最该准备技术面、项目面、压力面还是 HR／业务面，再为当前阶段讲解知识、项目表达方式、常见追问和补强建议。默认不进行现场模拟面试。
+```
+
+### 针对技术知识补课
+
+```text
+使用 ican-interview-prep-coach，结合目标岗位和我当前掌握程度，给我讲清楚 RAG、Agent、Function Call、向量数据库和多智能体协作。每个主题说明原理、常见架构、项目中的使用位置、面试表达和容易被追问的点。需要时推荐适合的短视频和长视频。
+```
+
+## 启动网页版
+
+在仓库根目录运行。
+
+```powershell
 pnpm dev
 ```
 
-4. Open browser and visit `http://localhost:3000`
+生产构建和启动命令如下。
 
-## 📦 Build and Deploy
-
-```bash
+```powershell
 pnpm build
+pnpm start
 ```
 
+## 使用 CLI
 
-## 🐳 Docker Deployment
+先启动网页版服务。CLI 默认连接 `http://localhost:3000`。
 
-### Docker Compose
-
-1. Ensure you have Docker and Docker Compose installed
-
-2. Run the following command in the project root directory:
-
-```bash
-docker compose up -d
+```powershell
+pnpm resume -- list
+pnpm resume -- get <简历ID>
+pnpm resume -- put <简历JSON文件>
+pnpm resume -- patch <简历ID> <修改JSON文件>
+pnpm resume -- delete <简历ID>
 ```
 
-This will:
+连接其他部署地址时设置环境变量。
 
-- Automatically build the application image
-- Start the container in the background
+```powershell
+$env:MAGIC_RESUME_URL = "http://127.0.0.1:3000"
+$env:MAGIC_RESUME_API_KEY = "与服务端 RESUME_API_KEY 相同的值"
+pnpm resume -- list
+```
 
+CLI 与网页版使用同一套 HTTP API。CLI 成功写入服务端，不代表所有浏览器 Profile 都会立即出现该简历。需要写入指定浏览器本地数据时，`ican-job-resume` 会按照指定浏览器和 Profile 执行导入流程，不会控制浏览器点击。
 
-## 📝 License and Commercial Use
+## 项目目录
 
-The source code of this project is open-sourced under the **Apache 2.0** license, but with **strict commercial use restrictions**:
+```text
+magic-resume/
+├─ apps/web/          网页版和 HTTP API
+├─ packages/cli/      Magic Resume CLI
+├─ skills/            ICAN Skills
+├─ docs/              架构、接口和开发文档
+└─ scripts/           Skill 安装等仓库工具
+```
 
-- **Free for Personal Use**: Free to use purely for personal, non-commercial purposes (e.g., personal learning, creating your own resume).
-- **Commercial License Required**: Unauthorized commercial use is strictly prohibited. Any organization or individual that provides it as a service (SaaS/PaaS, etc.) to the public for profit, uses it for enterprise commercial operations, or conducts secondary commercial development, **must obtain a commercial license, regardless of whether the source code has been modified**.
+详细设计见 [架构说明](docs/ARCHITECTURE.md) 和 [开发说明](docs/DEVELOPMENT.md)。
 
-Please see the [LICENSE](LICENSE) file for detailed terms.
+## 开发检查
 
-## 🗺️ Roadmap
+```powershell
+pnpm check
+```
 
-- [x] AI-assisted writing
-- [x] Multi-language support
-- [ ] Support for more resume templates
-- [ ] Support for more export formats
-- [ ] Import PDF, Markdown, etc.
-- [x] Custom model
-- [x] Auto one page
-- [ ] Online resume hosting
+该命令检查网页版生产构建和 CLI 语法。
 
-## 📈 Star History
+## 许可证
 
-<a href="https://star-history.com/#JOYCEQL/magic-resume&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=JOYCEQL/magic-resume&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=JOYCEQL/magic-resume&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=JOYCEQL/magic-resume&type=Date" />
- </picture>
-</a>
-
-## 📞 Contact
-
-You can follow the latest updates via:
-
-- Author: Siyue
-- X: @GuangzhouY81070
-- Discord: Join our community https://discord.gg/9mWgZrW3VN
-- Email: 18806723365@163.com
-
-
-- Project Homepage: https://github.com/JOYCEQL/magic-resume
-
-## 🌟 Support
-
-If you find this project helpful, please give it a star ⭐️
-
-## ❤️ Sponsors
-
-<div align="center">
-  <h3>Sponsors</h3>
-  <p>If you sponsored this project but are not listed here, please contact me.</p>
-  <p>
-    <a href="https://github.com/yj147">
-      <img src="https://github.com/yj147.png?size=40" width="40" height="40" alt="@yj147" />
-    </a>
-    <a href="https://github.com/someone1128">
-      <img src="https://github.com/someone1128.png?size=40" width="40" height="40" alt="@someone1128" />
-    </a>
-    <!-- Add more sponsors here:
-    <a href="https://github.com/<username>">
-      <img src="https://github.com/<username>.png?size=40" width="40" height="40" alt="@<username>" />
-    </a>
-    -->
-  </p>
-</div>
+代码遵循仓库中的 [LICENSE](LICENSE)。

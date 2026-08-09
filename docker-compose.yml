@@ -1,6 +1,18 @@
 
 services:
+  init-data:
+    image: magic-resume-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: "0:0"
+    command: ["sh", "-c", "mkdir -p /data/resumes && chown -R 1001:1001 /data"]
+    volumes:
+      - ./data:/data
+    restart: "no"
+
   web:
+    image: magic-resume-web
     build:
       context: .
       dockerfile: Dockerfile
@@ -8,4 +20,16 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - RESUME_API_KEY=${RESUME_API_KEY:?Set RESUME_API_KEY in .env}
+      - RESUME_DATA_DIR=/data/resumes
+      - RESUME_DEFAULT_ID=${RESUME_DEFAULT_ID:-}
+      - RESUME_BOOTSTRAP_TOKEN=${RESUME_BOOTSTRAP_TOKEN:-}
+    depends_on:
+      init-data:
+        condition: service_completed_successfully
+    volumes:
+      - ./data:/data
+      # Keep verified branch build and first-party CLI across container recreation.
+      - ./runtime-dist:/app/apps/web/dist:ro
+      - ./packages/cli:/app/packages/cli:ro
     restart: always

@@ -1,11 +1,16 @@
 Dockerfile
 .dockerignore
 node_modules
+**/node_modules
+**/dist
+**/.tanstack
+**/*.tsbuildinfo
 npm-debug.log
 README.md
 .next
 .git
 .env.local
+.env
 .env.development.local
 .env.test.local
 .env.production.local
