@@ -2,16 +2,7 @@
 
 ICAN 是一套可以交给 Codex、Claude Code 等 AI Agent 使用的职业工作流，同时提供 Magic Resume 网页版和命令行接口。
 
-它覆盖四项连续任务。
-
-- 初始化独立职业工作区
-- 记录个人经历、能力证据和职业知识库
-- 根据岗位 JD 生成新简历，同时保留原简历
-- 针对技术面、项目面、压力面和 HR／业务面进行面试前培训
-
-个人简历和职业资料保存在项目仓库之外的 ICAN 工作区。代码、Skill、用户数据互不混放。
-
-## 两种使用方式
+## 项目有两种使用形式
 
 ### Agent 加 CLI
 
@@ -32,6 +23,23 @@ Magic Resume CLI
 `apps/web/` 提供 Magic Resume 网页界面和 HTTP API。用户可以在浏览器中编辑、预览和导出简历。
 
 本地启动后访问 [http://127.0.0.1:3000/app/dashboard/resumes](http://127.0.0.1:3000/app/dashboard/resumes)。
+
+## 一句话安装全部 Skill
+
+复制下面整段提示词，发送给 Codex、Claude Code 或其他支持 Skill 的 Agent。GitHub 代码块右上角自带复制按钮。
+
+```text
+请从 https://github.com/lucianwhy/magic-resume/tree/master/skills 安装全部 ICAN Skill。
+
+要求
+1. 下载仓库 master 分支，只安装 skills/ 目录中所有以 ican- 开头的 Skill。
+2. 自动识别当前环境是 Codex、Claude Code 还是 cc-switch，并安装到对应的 Skills 目录。
+3. 如果存在同名旧版本，先备份旧目录，再更新到仓库中的最新版本，不要删除我的职业资料。
+4. 安装后检查每个 Skill 的 SKILL.md 是否完整，并确认 Agent 能发现这些 Skill。
+5. 最后告诉我安装路径、已安装的 Skill 列表，以及第一条推荐使用的提示词。
+```
+
+ICAN 覆盖职业工作区初始化、个人职业知识库、岗位定制简历和四轮面试前培训。个人简历和职业资料保存在代码仓库之外，代码、Skill、用户数据互不混放。
 
 ## 安装 ICAN Skills
 
