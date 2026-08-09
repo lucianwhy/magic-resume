@@ -19,7 +19,7 @@ from urllib.request import Request, urlopen
 
 SEARCH_ENDPOINT = "https://api.bilibili.com/x/web-interface/search/type"
 SEARCH_PAGE = "https://search.bilibili.com/all"
-USER_AGENT = "Mozilla/5.0 interview-prep-coach/1.0"
+USER_AGENT = "Mozilla/5.0 ican-interview-prep-coach/1.0"
 CIRCUIT_SECONDS = 30 * 60
 
 ANGLE_QUERIES = {
@@ -267,7 +267,7 @@ def main() -> None:
 
     queries = args.query or [template.format(topic=args.topic) for template in ANGLE_QUERIES[args.angle]]
     queries = list(dict.fromkeys(query.strip() for query in queries if query.strip()))[: args.max_queries]
-    cache_dir = args.cache_dir or Path(tempfile.gettempdir()) / "interview-prep-coach-bilibili"
+    cache_dir = args.cache_dir or Path(tempfile.gettempdir()) / "ican-interview-prep-coach-bilibili"
 
     videos: dict[str, dict] = {}
     errors: list[dict] = []

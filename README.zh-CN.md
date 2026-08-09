@@ -15,6 +15,15 @@
 
 Magic Resume 是一个现代化的在线简历编辑器，让创建专业简历变得简单有趣。基于 TanStack Start 和 Motion 构建，支持实时预览和自定义主题。
 
+本仓库同时承载 ICAN 职业 Agent 套件，代码与 Skill 已分层：
+
+- `apps/web/`：网页版 Magic Resume。
+- `packages/cli/`：供人和 Agent 调用的命令行客户端。
+- `skills/`：可独立安装的 `ican-*` Skills。
+- 用户职业资料由 `ican-init` 创建在仓库外的工作区，不提交到代码仓库。
+
+架构见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，开发命令见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。
+
 ## 📸 项目截图
 
 <img width="1920" height="1440" alt="85_1x_shots_so" src="https://github.com/user-attachments/assets/4667e49a-7bf2-4379-9390-725e42799dc7" />

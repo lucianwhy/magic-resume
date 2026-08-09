@@ -30,6 +30,6 @@ services:
     volumes:
       - ./data:/data
       # Keep verified branch build and first-party CLI across container recreation.
-      - ./runtime-dist:/app/dist:ro
-      - ./scripts:/app/scripts:ro
+      - ./runtime-dist:/app/apps/web/dist:ro
+      - ./packages/cli:/app/packages/cli:ro
     restart: always

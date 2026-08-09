@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+node_modules/
 /.pnp
 .pnp.js
 .yarn/install-state.gz
@@ -19,6 +20,10 @@
 /dist/
 /.data/
 /data/
+/apps/web/build/
+/apps/web/dist/
+/apps/web/.data/
+/apps/web/data/
 
 # misc
 .DS_Store
@@ -37,7 +42,7 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-src/routeTree.gen.ts
+apps/web/src/routeTree.gen.ts
 
 # idea
 .idea
@@ -45,3 +50,12 @@ src/routeTree.gen.ts
 .history
 .agent
 .tanstack
+
+# ICAN user workspace data belongs outside this code repository
+/.ican/
+/knowledge/
+/jobs/
+/resumes/
+/interviews/
+/exports/
+/private/

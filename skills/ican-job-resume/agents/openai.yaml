@@ -1,0 +1,4 @@
+interface:
+  display_name: "岗位定制简历"
+  short_description: "按 JD 用真实经历生成可验证的新简历版本"
+  default_prompt: "使用 $ican-job-resume 根据这份岗位 JD，为我生成不覆盖原件的定制简历并完成验证。"

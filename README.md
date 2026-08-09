@@ -14,6 +14,15 @@
 
 Magic Resume is a modern online resume editor that makes creating professional resumes simple and enjoyable. Built with TanStack Start and Framer Motion, it supports real-time preview and custom themes.
 
+This repository also hosts the ICAN career Agent suite with explicit module seams:
+
+- `apps/web/`: Magic Resume web application.
+- `packages/cli/`: command-line client for humans and Agents.
+- `skills/`: independently installable `ican-*` Skills.
+- User career data lives in an external workspace created by `ican-init`, never in this repository.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
 ## 📸 Screenshots
 
 <img width="1920" height="1440" alt="336_1x_shots_so" src="https://github.com/user-attachments/assets/18969a17-06f8-4a4b-94eb-284ba8442620" />

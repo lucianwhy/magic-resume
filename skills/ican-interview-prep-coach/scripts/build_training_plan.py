@@ -35,6 +35,39 @@ STAGES = {
     },
 }
 
+CAPABILITY_LEVELS = {
+    "L0": "未知：未接触，或无法辨认概念。",
+    "L1": "识别：能给出基本定义和用途。",
+    "L2": "解释：能讲清最小架构、流程和组件。",
+    "L3": "应用：能映射到真实项目并说明本人动作。",
+    "L4": "取舍：能解释选择、失败模式、排障和边界。",
+    "L5": "优化：能提出可验证的优化及评估指标。",
+}
+
+TRAINING_DESIGN = {
+    "reference": "references/common/training-design.md",
+    "diagnosis": {
+        "current_level": None,
+        "target_level": None,
+        "gap_dimensions": ["knowledge", "application", "expression", "evidence"],
+        "priority_rule": "岗位重要度 × 缺口大小 × 面试紧迫度",
+    },
+    "micro_lesson": [
+        "为什么会考",
+        "一句话定义",
+        "最小架构",
+        "项目映射",
+        "常见误区",
+        "表达边界",
+        "五分钟练习",
+        "通过标准",
+    ],
+    "evaluation": {
+        "dimensions": ["理解", "表达", "映射", "取舍"],
+        "states": ["通过", "部分通过", "待训练", "缺证据"],
+    },
+}
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -42,7 +75,12 @@ def main() -> None:
     parser.add_argument("--output", type=Path, help="Optional JSON output path")
     args = parser.parse_args()
 
-    plan = {"stage": args.stage, **STAGES[args.stage]}
+    plan = {
+        "stage": args.stage,
+        "capability_levels": CAPABILITY_LEVELS,
+        "training_design": TRAINING_DESIGN,
+        **STAGES[args.stage],
+    }
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

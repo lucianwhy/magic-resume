@@ -1,0 +1,4 @@
+interface:
+  display_name: "ICAN 职业工作区初始化"
+  short_description: "自动初始化职业工作区、共享上下文，并引导导入简历和目标岗位"
+  default_prompt: "使用 $ican-init 初始化我的 ICAN 职业工作区，并告诉我下一步该提供什么。"

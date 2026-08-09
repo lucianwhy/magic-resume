@@ -4,6 +4,7 @@ import viteReact from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
+  envDir: "../..",
   server: {
     port: 3000
   },
