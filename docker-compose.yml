@@ -1,5 +1,36 @@
-
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: magic_resume
+      POSTGRES_USER: magic_resume
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-magic_resume_local_only}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U magic_resume -d magic_resume"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./services/api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://magic_resume:${POSTGRES_PASSWORD:-magic_resume_local_only}@postgres:5432/magic_resume
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:5173,http://127.0.0.1:3000
+      DEMO_USER_ID: 00000000-0000-0000-0000-000000000001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
   init-data:
     image: magic-resume-web
     build:
@@ -29,7 +60,9 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./data:/data
-      # Keep verified branch build and first-party CLI across container recreation.
       - ./runtime-dist:/app/apps/web/dist:ro
       - ./packages/cli:/app/packages/cli:ro
     restart: always
+
+volumes:
+  postgres-data:

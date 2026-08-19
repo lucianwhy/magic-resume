@@ -44,6 +44,11 @@ yarn-error.log*
 *.tsbuildinfo
 apps/web/src/routeTree.gen.ts
 
+# Python local development
+__pycache__/
+*.py[cod]
+backend/.venv/
+
 # idea
 .idea
 
@@ -59,3 +64,8 @@ apps/web/src/routeTree.gen.ts
 /interviews/
 /exports/
 /private/
+
+# FastAPI service local files
+services/api/.env
+services/api/.venv/
+services/api/.pytest_cache/
