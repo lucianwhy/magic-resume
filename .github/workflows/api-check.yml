@@ -1,0 +1,53 @@
+name: Profile API Check
+
+on:
+  push:
+    paths:
+      - "services/api/**"
+      - "apps/web/src/features/profile/**"
+      - ".github/workflows/api-check.yml"
+  pull_request:
+    paths:
+      - "services/api/**"
+      - "apps/web/src/features/profile/**"
+      - ".github/workflows/api-check.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: magic_resume
+          POSTGRES_USER: magic_resume
+          POSTGRES_PASSWORD: magic_resume_ci_only
+        options: >-
+          --health-cmd "pg_isready -U magic_resume -d magic_resume"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+    defaults:
+      run:
+        working-directory: services/api
+
+    env:
+      DATABASE_URL: postgresql+psycopg://magic_resume:magic_resume_ci_only@localhost:5432/magic_resume
+      CORS_ORIGINS: http://localhost:3000
+      DEMO_USER_ID: 00000000-0000-0000-0000-000000000001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt
+      - run: alembic upgrade head
+      - run: pytest

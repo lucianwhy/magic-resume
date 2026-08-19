@@ -17,6 +17,8 @@ ican-career-suite/
 │  └─ web/                 # 网页版及 HTTP 接口实现
 ├─ packages/
 │  └─ cli/                 # 面向人和 Agent 的 HTTP CLI
+├─ services/
+│  └─ api/                 # FastAPI 个人信息服务与数据库迁移
 ├─ skills/                 # 可独立安装的 ican-* Skills
 ├─ docs/                   # 架构、接口和开发文档
 ├─ scripts/                # 仓库级工具
@@ -58,6 +60,7 @@ ican-career-suite/
 ```text
 Agent → Skill → CLI → Web HTTP API → resume storage
 User  → Web UI ───────────────────→ resume storage
+Web 个人中心 UI → Profile API HTTP → PostgreSQL
 ```
 
 允许方向只有从左向右。禁止 CLI 导入 Web 内部代码，禁止 Web 读取 Skill，禁止提交用户工作区。
@@ -68,3 +71,9 @@ User  → Web UI ───────────────────→ re
 - CLI 可以增加命令，只要现有命令、JSON 输出和退出码保持兼容。
 - Skill 可以迭代工作流，只要 `.ican/project.json` 和事实边界保持兼容。
 - 工作区协议需要破坏性升级时，增加 schema version 和迁移工具，不静默改写旧数据。
+
+### API 服务模块
+
+接口：`/health`、`/api/v1/profile`。实现位于 `services/api/`，使用 FastAPI、PostgreSQL、SQLAlchemy 和 Alembic。
+
+Web 通过 HTTP 调用该服务，不导入 Python 源码；该服务也不得导入 Web、CLI 或 Skill 内部实现。开发期通过服务端固定的演示用户隔离资料；接入认证后由认证上下文提供 `user_id`，客户端请求体不得携带它。
