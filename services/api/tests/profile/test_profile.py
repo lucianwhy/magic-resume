@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi.testclient import TestClient
 from sqlalchemy import delete
 
-from app.database import SessionLocal
+from app.core.database import SessionLocal
 from app.main import app
 from app.models import User
 
