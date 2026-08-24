@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AlertCircle, LoaderCircle, Save, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ProfileResources from "@/features/profile/ProfileResources";
 import {
   Card,
   CardContent,
@@ -276,6 +277,8 @@ const ProfilePage = () => {
           </CardFooter>
         </Card>
       </form>
+
+      <ProfileResources />
     </div>
   );
 };

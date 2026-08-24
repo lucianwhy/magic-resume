@@ -1,9 +1,10 @@
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import User
-from app.modules.profile.models import Profile
+from app.modules.profile.models import Education, Profile, Project
 
 # repositories/profile.py 是数据访问层：
 # 按user_id 查profile
@@ -28,3 +29,60 @@ class ProfileRepository:
         self.db.flush()
 
         return profile
+
+class EducationRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def list_by_user(self, user_id: UUID) -> list[Education]:
+        statement = (
+            select(Education)
+            .where(Education.user_id == user_id)
+            .order_by(Education.start_date.desc(), Education.created_at.desc())
+        )
+        return list(self.db.scalars(statement).all())
+
+    def get_by_id(self, user_id: UUID, education_id: UUID) -> Education | None:
+        statement = select(Education).where(
+            Education.id == education_id,
+            Education.user_id == user_id,
+        )
+        return self.db.scalar(statement)
+
+    def create(self, user_id: UUID, **fields) -> Education:
+        education = Education(user_id=user_id, **fields)
+        self.db.add(education)
+        self.db.flush()
+        return education
+
+    def delete(self, education: Education) -> None:
+        self.db.delete(education)
+
+
+class ProjectRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def list_by_user(self, user_id: UUID) -> list[Project]:
+        statement = (
+            select(Project)
+            .where(Project.user_id == user_id)
+            .order_by(Project.updated_at.desc())
+        )
+        return list(self.db.scalars(statement).all())
+
+    def get_by_id(self, user_id: UUID, project_id: UUID) -> Project | None:
+        statement = select(Project).where(
+            Project.id == project_id,
+            Project.user_id == user_id,
+        )
+        return self.db.scalar(statement)
+
+    def create(self, user_id: UUID, **fields) -> Project:
+        project = Project(user_id=user_id, **fields)
+        self.db.add(project)
+        self.db.flush()
+        return project
+
+    def delete(self, project: Project) -> None:
+        self.db.delete(project)

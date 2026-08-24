@@ -1,9 +1,21 @@
-import type { Profile, ProfileUpdate } from "./types";
+import type {
+  Education,
+  EducationCreate,
+  EducationUpdate,
+  Profile,
+  ProfileUpdate,
+  Project,
+  ProjectCreate,
+  ProjectUpdate,
+} from "./types";
 
 const API_BASE_URL =
   import.meta.env.VITE_PROFILE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+async function request<T>(
+  path: string,
+  options?: RequestInit
+): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
@@ -28,6 +40,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(message);
   }
 
+  // DELETE 接口返回 204，没有响应体。
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json() as Promise<T>;
 }
 
@@ -39,6 +56,60 @@ export function updateProfile(data: ProfileUpdate) {
   return request<Profile>("/api/v1/profile", {
     method: "PATCH",
     body: JSON.stringify(data),
+  });
+}
+
+export function fetchEducations() {
+  return request<Education[]>("/api/v1/educations");
+}
+
+export function createEducation(data: EducationCreate) {
+  return request<Education>("/api/v1/educations", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateEducation(
+  educationId: string,
+  data: EducationUpdate
+) {
+  return request<Education>(`/api/v1/educations/${educationId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteEducation(educationId: string) {
+  return request<void>(`/api/v1/educations/${educationId}`, {
+    method: "DELETE",
+  });
+}
+
+export function fetchProjects() {
+  return request<Project[]>("/api/v1/projects");
+}
+
+export function createProject(data: ProjectCreate) {
+  return request<Project>("/api/v1/projects", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateProject(
+  projectId: string,
+  data: ProjectUpdate
+) {
+  return request<Project>(`/api/v1/projects/${projectId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteProject(projectId: string) {
+  return request<void>(`/api/v1/projects/${projectId}`, {
+    method: "DELETE",
   });
 }
 

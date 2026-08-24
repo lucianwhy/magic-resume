@@ -1,4 +1,4 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import LandingPage from "@/app/(public)/[locale]/page";
 import { defaultLocale, locales, type Locale } from "@/i18n/config";
 import zhMessages from "@/i18n/locales/zh.json";
@@ -31,6 +31,9 @@ function getLocaleSeo(locale: Locale) {
 }
 
 export const Route = createFileRoute("/$locale")({
+  beforeLoad: () => {
+    throw redirect({ to: "/app/dashboard/resumes" });
+  },
   head: ({ params }) => {
     const locale = resolveLocale(params.locale);
     const seo = getLocaleSeo(locale);
