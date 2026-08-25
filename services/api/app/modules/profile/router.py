@@ -126,6 +126,15 @@ def list_projects(
     return ProjectService(db).list_projects(user_id)
 
 
+@project_router.get("/{project_id}", response_model=ProjectResponse)
+def get_project(
+    project_id: UUID,
+    db: Session = Depends(get_db),
+    user_id: UUID = Depends(get_current_user_id),
+):
+    return ProjectService(db).get_project(user_id, project_id)
+
+
 @project_router.post(
     "",
     response_model=ProjectResponse,

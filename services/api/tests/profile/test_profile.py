@@ -252,8 +252,8 @@ def test_project_cannot_be_read_by_another_user():
             "/api/v1/projects/00000000-0000-0000-0000-000000000001"
         )
 
-        assert response.status_code == 200
-        assert response.json() == []
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Project not found"
 
     finally:
         app.dependency_overrides.clear()

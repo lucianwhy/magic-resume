@@ -106,6 +106,14 @@ class ProjectService:
     def list_projects(self, user_id: UUID) -> list[Project]:
         return self.repository.list_by_user(user_id)
 
+    def get_project(self, user_id: UUID, project_id: UUID) -> Project:
+        project = self.repository.get_by_id(user_id, project_id)
+
+        if project is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        return project
+
     def create_project(
         self,
         user_id: UUID,
