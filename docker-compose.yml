@@ -64,5 +64,42 @@ services:
       - ./packages/cli:/app/packages/cli:ro
     restart: always
 
+  digital-human-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  digital-human-api:
+    build:
+      context: ./services/digital-human
+      dockerfile: docker/Dockerfile.api
+    environment:
+      OPENTALKING_REDIS_URL: redis://digital-human-redis:6379/0
+      OPENTALKING_WORKER_URL: http://digital-human-worker:9001
+      OPENTALKING_API_HOST: 0.0.0.0
+      OPENTALKING_API_PORT: 8000
+      OPENTALKING_INFERENCE_MOCK: ${OPENTALKING_INFERENCE_MOCK:-1}
+    depends_on:
+      digital-human-redis:
+        condition: service_healthy
+    ports:
+      - "${DIGITAL_HUMAN_API_PORT:-8210}:8000"
+    profiles: [digital-human]
+
+  digital-human-worker:
+    build:
+      context: ./services/digital-human
+      dockerfile: docker/Dockerfile.worker
+    environment:
+      OPENTALKING_REDIS_URL: redis://digital-human-redis:6379/0
+      OPENTALKING_INFERENCE_MOCK: ${OPENTALKING_INFERENCE_MOCK:-1}
+    depends_on:
+      digital-human-redis:
+        condition: service_healthy
+    profiles: [digital-human]
+
 volumes:
   postgres-data:

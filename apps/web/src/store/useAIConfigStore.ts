@@ -13,6 +13,12 @@ interface AIConfigState {
   openaiApiEndpoint: string;
   geminiApiKey: string;
   geminiModelId: string;
+  digitalHumanEnabled: boolean;
+  digitalHumanApiUrl: string;
+  digitalHumanModel: string;
+  setDigitalHumanEnabled: (enabled: boolean) => void;
+  setDigitalHumanApiUrl: (url: string) => void;
+  setDigitalHumanModel: (model: string) => void;
   setSelectedModel: (model: AIModelType) => void;
   setDoubaoApiKey: (apiKey: string) => void;
   setDoubaoModelId: (modelId: string) => void;
@@ -39,6 +45,9 @@ export const useAIConfigStore = create<AIConfigState>()(
       openaiApiEndpoint: "",
       geminiApiKey: "",
       geminiModelId: "gemini-flash-latest",
+      digitalHumanEnabled: true,
+      digitalHumanApiUrl: import.meta.env.VITE_DIGITAL_HUMAN_API_BASE_URL ?? "http://127.0.0.1:8210",
+      digitalHumanModel: "mock",
       setSelectedModel: (model: AIModelType) => set({ selectedModel: model }),
       setDoubaoApiKey: (apiKey: string) => set({ doubaoApiKey: apiKey }),
       setDoubaoModelId: (modelId: string) => set({ doubaoModelId: modelId }),
@@ -49,6 +58,9 @@ export const useAIConfigStore = create<AIConfigState>()(
       setOpenaiApiEndpoint: (endpoint: string) => set({ openaiApiEndpoint: endpoint }),
       setGeminiApiKey: (apiKey: string) => set({ geminiApiKey: apiKey }),
       setGeminiModelId: (modelId: string) => set({ geminiModelId: modelId }),
+      setDigitalHumanEnabled: (enabled: boolean) => set({ digitalHumanEnabled: enabled }),
+      setDigitalHumanApiUrl: (url: string) => set({ digitalHumanApiUrl: url.trim() }),
+      setDigitalHumanModel: (model: string) => set({ digitalHumanModel: model }),
       isConfigured: () => {
         const state = get();
         const config = AI_MODEL_CONFIGS[state.selectedModel];

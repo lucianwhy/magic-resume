@@ -18,7 +18,8 @@ ican-career-suite/
 ├─ packages/
 │  └─ cli/                 # 面向人和 Agent 的 HTTP CLI
 ├─ services/
-│  └─ api/                 # FastAPI 个人信息服务与数据库迁移
+│  ├─ api/                 # FastAPI 个人信息服务与数据库迁移
+│  └─ digital-human/      # 独立 OpenTalking 数字人服务
 ├─ skills/                 # 可独立安装的 ican-* Skills
 ├─ docs/                   # 架构、接口和开发文档
 ├─ scripts/                # 仓库级工具
@@ -61,6 +62,7 @@ ican-career-suite/
 Agent → Skill → CLI → Web HTTP API → resume storage
 User  → Web UI ───────────────────→ resume storage
 Web 个人中心 UI → Profile API HTTP → PostgreSQL
+Web 数字人组件 → Digital Human HTTP/WebSocket API → OpenTalking runtime
 ```
 
 允许方向只有从左向右。禁止 CLI 导入 Web 内部代码，禁止 Web 读取 Skill，禁止提交用户工作区。
@@ -70,6 +72,7 @@ Web 个人中心 UI → Profile API HTTP → PostgreSQL
 - Web 内部可以重构，只要 HTTP 接口保持兼容。
 - CLI 可以增加命令，只要现有命令、JSON 输出和退出码保持兼容。
 - Skill 可以迭代工作流，只要 `.ican/project.json` 和事实边界保持兼容。
+- 数字人服务必须保持独立进程和依赖环境；Web 只能通过 HTTP/WebSocket 契约接入，不能导入其 Python 或前端源码。
 - 工作区协议需要破坏性升级时，增加 schema version 和迁移工具，不静默改写旧数据。
 
 ### API 服务模块

@@ -27,6 +27,7 @@ import {
   TooltipTrigger
 } from "@/components/ui/tooltip";
 import Logo from "@/components/shared/Logo";
+import DigitalHumanWidget from "@/components/shared/DigitalHumanWidget";
 import { useLocale, useTranslations } from "@/i18n/compat/client";
 
 interface MenuItem {
@@ -179,11 +180,12 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           </SidebarContent>
           <SidebarFooter />
         </Sidebar>
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col bg-sidebar">
           <div className="p-2">
             <SidebarTrigger />
           </div>
           <div className="flex-1">{children}</div>
+          <DigitalHumanWidget />
         </main>
       </SidebarProvider>
     </div>

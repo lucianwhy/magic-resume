@@ -1,0 +1,16 @@
+# OpenTalking runtime state is deployment data, not source.
+.env
+.env.*
+!.env.example
+.venv/
+node_modules/
+dist/
+logs/
+models/
+run/
+data/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
