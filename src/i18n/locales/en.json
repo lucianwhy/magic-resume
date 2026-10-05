@@ -48,8 +48,8 @@
       "storage": {
         "badge": "Local Storage",
         "title": "Data Security, Privacy First",
-        "description": "Your resumes stay in your browser, with an optional local backup folder. Keep control of your files and take them with you.",
-        "item1": "Local file storage",
+        "description": "Resumes and settings stay in your local database, with an optional backup folder. The web app, CLI and MCP share the same data.",
+        "item1": "Local database storage",
         "item1_description": "Save locally and choose a backup folder",
         "item2": "Multiple export formats",
         "item2_description": "Export PDF, PNG, JSON, or Markdown",
@@ -84,7 +84,7 @@
         },
         {
           "question": "Is my resume data secure?",
-          "answer": "Magic Resume uses local storage. Resume data is stored in your current browser, with an optional local backup folder. When you use AI features, relevant content is sent to your configured model provider."
+          "answer": "Resumes and AI settings are stored in a local PostgreSQL database and can be exported for backup. AI features send relevant content to the provider you configure."
         },
         {
           "question": "What export formats are supported?",
@@ -228,11 +228,6 @@
           "visionTestFailed": "The test image was not read correctly. Verify image input support for this model and endpoint."
         }
       },
-      "notice": {
-        "title": "Attention",
-        "description": "It is recommended to configure a resume backup folder in the settings to prevent your data from being lost when the browser cache is cleared",
-        "goToSettings": "Go to Settings"
-      },
       "deleteConfirmTitle": "Confirm Delete Resume?",
       "deleteConfirmDescription": "This action cannot be undone. This will permanently delete this resume and remove the data from your device.",
       "createDialog": {
@@ -278,6 +273,7 @@
         "description": "Choose a folder to sync and backup your resumes. All data is stored locally for synchronization.",
         "currentSyncFolder": "Current Local Backup Folder",
         "noFolderConfigured": "No local backup folder configured",
+        "reauthorize": "Select again to authorize this browser",
         "changeFolder": "Change Folder",
         "selectFolder": "Select Folder",
         "statusConfigured": "Configured",
@@ -356,7 +352,7 @@
           "providersHint": "Choose a provider and configure it once",
           "providerModelsHint": "Enter an API key to use the models below",
           "providerKeyPlaceholder": "Enter this provider's API key",
-          "keySharedHint": "All models from this provider share this key. It is saved in this browser.",
+          "keySharedHint": "All models from this provider share this key. It is saved in the local database.",
           "compatibleService": "Use an OpenAI-compatible service",
           "customEndpointActive": "Using a custom compatible-service endpoint",
           "compatibleServiceHint": "Keep the default URL for an official OpenAI key. For a relay or compatible service, enter its API base URL.",
@@ -367,7 +363,7 @@
           "recommended": "Recommended",
           "usedByText": "Used for writing",
           "usedByPdf": "Used for PDF parsing",
-          "formHint": "Settings are saved automatically in this browser",
+          "formHint": "Settings are saved automatically to the local database",
           "configured": "Configured",
           "textTag": "Text",
           "textChange": "Choose the writing model",
@@ -385,7 +381,7 @@
           "libraryEmpty": "Add your first model to manage it here.",
           "emptyTitle": "Connect your first model",
           "emptyDescription": "Enter your provider API key and model ID to polish resumes. Models with image input can also import PDFs.",
-          "localStorage": "Settings stay in this browser. Requests are sent to your chosen provider.",
+          "localStorage": "Settings and API keys are stored in the local database. Requests are sent to your chosen provider.",
           "newModel": "Add a model connection",
           "editModel": "Model settings",
           "unsaved": "Unsaved changes",
@@ -530,7 +526,7 @@
       "printDesc": "Save via system print dialog. Use as a fallback or for custom margins.",
       "jsonDesc": "Export your resume data as JSON to backup or transfer between devices.",
       "markdownDesc": "Convert to plain Markdown text for easy sharing with AI models.",
-      "privacyNotice": "Magic Resume promise never to collect, upload, or store any of your resume data. Your privacy is fully protected."
+      "privacyNotice": "Resumes are stored in the local database. AI features and online PDF export send relevant content to their respective services; local export options are also available."
     },
     "button": {
       "export": "Export",

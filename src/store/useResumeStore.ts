@@ -1,6 +1,5 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import type { StateStorage } from "zustand/middleware";
+import { settingsValue } from "@/lib/workspace-settings-client";
 import { getFileHandle, verifyPermission } from "@/utils/fileSystem";
 import {
   BasicInfo,
@@ -100,8 +99,6 @@ interface ResumeStore {
   removeCertificate: (id: string) => void;
 }
 
-type PersistedResumeStore = Pick<ResumeStore, "resumes" | "activeResumeId">;
-
 const createDefaultCustomItem = (): CustomItem => ({
   id: generateUUID(),
   title: "未命名模块",
@@ -109,32 +106,6 @@ const createDefaultCustomItem = (): CustomItem => ({
   dateRange: "",
   description: "",
   visible: true,
-});
-
-const warnedPersistFailures = new Set<string>();
-
-const warnPersistFailure = (name: string, error: unknown) => {
-  if (warnedPersistFailures.has(name)) {
-    return;
-  }
-
-  warnedPersistFailures.add(name);
-  console.warn(
-    `[resume-store] Failed to persist "${name}" to localStorage. Changes remain available in memory for this session.`,
-    error
-  );
-};
-
-const createSafeLocalStorage = (): StateStorage => ({
-  getItem: (name) => localStorage.getItem(name),
-  setItem: (name, value) => {
-    try {
-      localStorage.setItem(name, value);
-    } catch (error) {
-      warnPersistFailure(name, error);
-    }
-  },
-  removeItem: (name) => localStorage.removeItem(name),
 });
 
 const parseTimestamp = (value?: string): number | null => {
@@ -208,7 +179,7 @@ const syncResumeToFile = async (
   resumeData: ResumeData,
   prevResume?: ResumeData
 ) => {
-  if (typeof window === "undefined" || typeof indexedDB === "undefined") {
+  if (typeof window === "undefined") {
     return;
   }
 
@@ -283,9 +254,7 @@ const debouncedSyncToFile = (
   });
 };
 
-export const useResumeStore = create(
-  persist<ResumeStore, [], [], PersistedResumeStore>(
-    (set, get) => ({
+export const useResumeStore = create<ResumeStore>((set, get) => ({
       resumes: {},
       activeResumeId: null,
       activeResume: null,
@@ -294,12 +263,7 @@ export const useResumeStore = create(
 
       createResume: (templateId = null, isBlank = false) => {
         const locale =
-          typeof document !== "undefined"
-            ? document.cookie
-                .split("; ")
-                .find((row) => row.startsWith("NEXT_LOCALE="))
-                ?.split("=")[1] || "zh"
-            : "zh";
+          settingsValue("preferences").locale ?? "zh";
 
         let initialResumeData: any;
         if (isBlank) {
@@ -554,12 +518,7 @@ export const useResumeStore = create(
 
         // 获取当前语言环境
         const locale =
-          typeof document !== "undefined"
-            ? document.cookie
-                .split("; ")
-                .find((row) => row.startsWith("NEXT_LOCALE="))
-                ?.split("=")[1] || "zh"
-            : "zh";
+          settingsValue("preferences").locale ?? "zh";
 
         const duplicatedResume = {
           ...structuredClone(originalResume),
@@ -983,30 +942,21 @@ export const useResumeStore = create(
         syncResumeToFile(resume);
         return resume.id;
       },
-    }),
-    {
-      name: "resume-storage",
-      storage: createJSONStorage<PersistedResumeStore>(() =>
-        createSafeLocalStorage()
-      ),
-      partialize: (state): PersistedResumeStore => ({
-        resumes: state.resumes,
-        activeResumeId: state.activeResumeId,
-      }),
-      merge: (persistedState, currentState) => {
-        const persisted = persistedState as Partial<PersistedResumeStore>;
-        const resumes = persisted.resumes ?? currentState.resumes;
-        const activeResumeId =
-          persisted.activeResumeId ?? currentState.activeResumeId;
+    }));
 
-        return {
-          ...currentState,
-          ...persisted,
-          resumes,
-          activeResumeId,
-          activeResume: activeResumeId ? resumes[activeResumeId] ?? null : null,
-        };
-      },
+// Database snapshots and acknowledgements bypass the edit actions. Only remote
+// content replacements reset undo/redo; an ordinary save keeps local history.
+export function replaceDatabaseResumes(resumes: Record<string, ResumeData>, preserveHistory = false) {
+  useResumeStore.setState((state) => {
+    const history = { ...state.history };
+    const future = { ...state.future };
+    for (const id of new Set([...Object.keys(state.resumes), ...Object.keys(resumes)])) {
+      if (!resumes[id]) { delete history[id]; delete future[id]; clearHistoryGroup(id); }
+      else if (!preserveHistory && state.resumes[id] !== resumes[id]) {
+        history[id] = []; future[id] = []; clearHistoryGroup(id);
+      }
     }
-  )
-);
+    const activeResumeId = state.activeResumeId && resumes[state.activeResumeId] ? state.activeResumeId : null;
+    return { resumes, activeResumeId, activeResume: activeResumeId ? resumes[activeResumeId] : null, history, future };
+  });
+}

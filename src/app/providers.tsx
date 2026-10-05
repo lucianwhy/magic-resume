@@ -1,7 +1,7 @@
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { HeroUIProvider } from "@heroui/react";
 import { useLocale } from "@/i18n/compat/client";
-import { useResumeDirectorySync } from "@/hooks/useResumeDirectorySync";
+import { ResumeStorageBoundary } from "@/components/shared/ResumeStorageBoundary";
 
 export function Providers({
   children,
@@ -11,19 +11,13 @@ export function Providers({
   forcedTheme?: "light";
 }) {
   const locale = useLocale();
-  useResumeDirectorySync();
 
   return (
     <HeroUIProvider locale={locale}>
       <ThemeProvider
-        attribute="class"
-        defaultTheme="light"
         forcedTheme={forcedTheme}
-        enableSystem
-        disableTransitionOnChange
-        storageKey="magic-resume-theme"
       >
-        {children}
+        <ResumeStorageBoundary>{children}</ResumeStorageBoundary>
       </ThemeProvider>
     </HeroUIProvider>
   );

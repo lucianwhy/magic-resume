@@ -1,0 +1,8 @@
+{
+  "name": "magic-resume-local-postgres",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "embedded-postgres": "17.10.0-beta.17"
+  }
+}

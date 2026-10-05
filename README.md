@@ -29,7 +29,7 @@ Magic Resume is a modern online resume editor that makes creating professional r
 - 📤 Export to PDF
 - 🔄 Real-time preview
 - 💾 Auto-save
-- 🔒 Local storage
+- 🔒 Local PostgreSQL storage with legacy browser import
 
 ## 🛠️ Tech Stack
 
@@ -47,8 +47,9 @@ Magic Resume is a modern online resume editor that makes creating professional r
 1. Clone the project
 
 ```bash
-git clone git@github.com:JOYCEQL/magic-resume.git
+git clone https://github.com/lucianwhy/magic-resume.git
 cd magic-resume
+git checkout main2DB
 ```
 
 2. Install dependencies
@@ -57,13 +58,84 @@ cd magic-resume
 pnpm install
 ```
 
-3. Start development server
+3. Start PostgreSQL, migrate the schema and start the development server (no Docker required)
 
 ```bash
+pnpm db:start
+pnpm db:migrate
 pnpm dev
 ```
 
 4. Open browser and visit `http://localhost:3000`
+
+The first visit to an application page imports legacy resumes from this browser and origin, retaining migration backups in PostgreSQL and clearing the old browser copy only after confirmed import. `localhost` and `127.0.0.1` have separate browser storage: use the original origin when migrating. See [database storage and API](docs/DATABASE_STORAGE.md) and [local PostgreSQL](docs/LOCAL_POSTGRES.md). This branch supports a single local workspace; public deployment requires authentication and access control.
+
+## 🤖 Install the CLI and MCP server
+
+Use the `main2DB` branch containing the database migration, Node.js 22.12+ (verified locally on Node.js 24), and pnpm. Follow Quick Start to install dependencies, start PostgreSQL, migrate the schema, and keep `pnpm dev` running. The CLI, MCP server, and web app share the local API at `http://127.0.0.1:3000`; Docker is optional.
+
+### CLI
+
+Run from the repository without a global installation:
+
+```bash
+pnpm resume --help
+pnpm resume list
+pnpm resume create --title "My resume"
+pnpm resume get RESUME_ID
+pnpm resume patch RESUME_ID --revision 1 --file patch.json
+pnpm resume export RESUME_ID --output resume.json
+pnpm resume import --file resume.json
+```
+
+Replace `RESUME_ID` and the revision with values returned by `get/list`. Example `patch.json`:
+
+```json
+{ "basic": { "title": "AI Application Engineer" } }
+```
+
+For a global command, run `npm link` in the repository, then use `magic-resume --help`. Alternatively, run `node /absolute/path/magic-resume/scripts/resume-cli.mjs list` from any directory. The Node entry point emits pure JSON for automation. Updates and deletes require the current revision; conflicts exit with code `2`.
+
+### MCP clients
+
+Generate a configuration containing the absolute Node and repository paths:
+
+```bash
+node scripts/resume-mcp-config.mjs
+```
+
+Merge the generated `mcpServers` entry into your local client's configuration, keeping existing servers. Configuration format:
+
+```json
+{
+  "mcpServers": {
+    "magic-resume": {
+      "command": "/absolute/path/to/node",
+      "args": ["/absolute/path/magic-resume/scripts/resume-mcp.mjs"],
+      "env": { "MAGIC_RESUME_API_URL": "http://127.0.0.1:3000" }
+    }
+  }
+}
+```
+
+For Codex, replace the absolute paths and register the stdio server:
+
+```bash
+codex mcp add magic-resume --env MAGIC_RESUME_API_URL=http://127.0.0.1:3000 -- /absolute/path/to/node /absolute/path/magic-resume/scripts/resume-mcp.mjs
+codex mcp get magic-resume --json
+```
+
+Reload MCP or open a new session to use `list_resumes`, `get_resume`, `create_resume`, `update_resume`, and `delete_resume`. Edits synchronize to the web app. Set `MAGIC_RESUME_API_URL` when using another local port. This is a local stdio server, not a public MCP URL for a remote ChatGPT connector.
+
+See [CLI and MCP setup](docs/CLI_MCP.md) for complete arguments, section editing, and backups.
+
+## 💾 Storage scope
+
+PostgreSQL is the primary storage for durable business data: complete resume documents (photos, certificate content/URLs, rich text, custom sections, templates and formatting), AI models, provider URLs, API keys, text/PDF model assignments, theme, language, sidebar state, last active resume, and directory names and authorization metadata.
+
+The first application visit migrates legacy settings from the same browser origin. After resumes and settings are successfully imported, their former browser copies are removed; the database keeps migration backups and import receipts. Visit other original origins to migrate their separate settings. API keys are currently stored in local database JSONB; database backups contain credentials and should stay private. The API accepts only local connections.
+
+The application no longer writes business data to localStorage, sessionStorage, IndexedDB, or cookies. Unsaved edits exist only in page memory: reconnect and retry, or export before leaving; closing the page loses uncommitted edits. Browser directory access uses a non-serializable `FileSystemHandle`, also kept only in memory. Select the sync directory again after refreshing; its metadata remains in PostgreSQL. Undo history, loading state, and temporary AI checks are session state. Original PDF files are not automatically archived as database attachments. See [database storage and API](docs/DATABASE_STORAGE.md).
 
 ## 📦 Build and Deploy
 
@@ -83,6 +155,8 @@ DeepSeek, Qwen, and Doubao continue to use a direct connection.
 
 
 ## 🐳 Docker Deployment
+
+The `main2DB` branch currently uses local Node.js and PostgreSQL. The original Docker setup below does not configure the database and is not a complete deployment for this branch. The resume API also rejects non-loopback connections.
 
 ### Docker Compose
 

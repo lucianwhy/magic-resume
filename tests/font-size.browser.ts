@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import { chromium } from "playwright";
 import { initialResumeState } from "../src/config/initialResumeData";
@@ -9,8 +10,10 @@ await mkdir(artifacts, { recursive: true });
 const browser = await chromium.launch({ channel: process.env.TEST_BROWSER_CHANNEL });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
 const origin = process.env.TEST_BASE_URL || "http://127.0.0.1:3000";
+const initialSettingsResponse = await fetch(`${origin}/api/workspace/`);
+const initialPreferences = initialSettingsResponse.ok ? (await initialSettingsResponse.json()).entries.preferences?.value ?? {} : {};
 const html = '<p>正文<strong><span style="color: #ff0000"><a href="https://example.com">目标文字</a></span></strong>保持默认</p><ul><li><p>第一项</p></li><li><p>第二项</p></li></ul>';
-const resume = { ...initialResumeState, id: "font-size-test", templateId: "classic", activeSection: "skills", skillContent: html };
+const resume = { ...initialResumeState, id: `font-size-${randomUUID()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), templateId: "classic", activeSection: "skills", skillContent: html };
 const editor = page.locator('.tiptap[contenteditable="true"]:visible').first();
 const control = page.getByRole("combobox", { name: /^(正文字号|Body font size)$/ }).first();
 const shortcut = process.platform === "darwin" ? "Meta" : "Control";
@@ -46,15 +49,21 @@ async function size(value: string) {
 }
 
 async function storedHtml() {
-  return page.evaluate(() => JSON.parse(localStorage.getItem("resume-storage") || "{}").state.resumes["font-size-test"].skillContent as string);
+  return page.evaluate(async (id) => {
+    const { flushResumeDatabase } = await import("/src/lib/resume-database-sync.ts");
+    await flushResumeDatabase();
+    const response = await fetch(`/api/resumes/${id}`);
+    return (await response.json()).resume.skillContent as string;
+  }, resume.id);
 }
 
 async function updateFixture(changes: Record<string, unknown>) {
-  await page.evaluate((patch) => {
-    const saved = JSON.parse(localStorage.getItem("resume-storage") || "{}");
-    Object.assign(saved.state.resumes["font-size-test"], patch);
-    localStorage.setItem("resume-storage", JSON.stringify(saved));
-  }, changes);
+  await page.evaluate(async ({ id, patch }) => {
+    const { useResumeStore } = await import("/src/store/useResumeStore.ts");
+    const { flushResumeDatabase } = await import("/src/lib/resume-database-sync.ts");
+    useResumeStore.getState().updateResume(id, patch);
+    await flushResumeDatabase();
+  }, { id: resume.id, patch: changes });
   await page.reload();
 }
 
@@ -108,7 +117,10 @@ try {
   assert.equal(await page.locator('#resume-preview a[href="https://example.com"]').first().evaluate((el) => getComputedStyle(el).fontSize), "24px");
   assert.equal(await sectionHeading.evaluate((el) => getComputedStyle(el).fontSize), headingSize);
   await size("20px");
-  await page.context().addCookies([{ name: "NEXT_LOCALE", value: "en", url: origin }]);
+  await page.evaluate(async () => {
+    const { savePreference, flushWorkspaceSettings } = await import("/src/lib/workspace-settings-client.ts");
+    savePreference("locale", "en"); await flushWorkspaceSettings();
+  });
   await page.reload();
   await editor.waitFor();
   await selectText("目标文字");
@@ -129,7 +141,10 @@ try {
     await size("20px");
   }
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.context().addCookies([{ name: "NEXT_LOCALE", value: "zh", url: origin }]);
+  await page.evaluate(async () => {
+    const { savePreference, flushWorkspaceSettings } = await import("/src/lib/workspace-settings-client.ts");
+    savePreference("locale", "zh"); await flushWorkspaceSettings();
+  });
   await updateFixture({ globalSettings: resume.globalSettings });
   await editor.waitFor();
   await selectText("目标文字");
@@ -174,8 +189,8 @@ try {
   await page.evaluate(async () => {
     const modulePath = "/src/utils/export.ts";
     const { exportResumeAsJson } = await import(modulePath);
-    const saved = JSON.parse(localStorage.getItem("resume-storage") || "{}");
-    exportResumeAsJson({ resume: saved.state.resumes["font-size-test"] });
+    const { useResumeStore } = await import("/src/store/useResumeStore.ts");
+    exportResumeAsJson({ resume: useResumeStore.getState().activeResume });
   });
   const jsonFile = await (await jsonDownload).path();
   assert.ok(jsonFile);
@@ -225,5 +240,21 @@ try {
   await page.screenshot({ path: `${artifacts}/failure.png`, fullPage: true });
   throw error;
 } finally {
+  const response = await fetch(`${origin}/api/resumes/${resume.id}`);
+  if (response.ok) {
+    const saved = await response.json();
+    await fetch(`${origin}/api/resumes/${resume.id}`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expectedRevision: saved.revision, mutationId: randomUUID() }) });
+  }
+  // Restore only the locale field changed by this test; preserve other settings.
+  const workspaceResponse = await fetch(`${origin}/api/workspace/`);
+  if (workspaceResponse.ok) {
+    const workspace = await workspaceResponse.json(), entry = workspace.entries.preferences;
+    if (entry) {
+      const value = { ...entry.value };
+      if (Object.hasOwn(initialPreferences, "locale")) value.locale = initialPreferences.locale;
+      else delete value.locale;
+      await fetch(`${origin}/api/workspace/preferences`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ value, expectedRevision: entry.revision, mutationId: randomUUID(), storageId: workspace.storageId }) });
+    }
+  }
   await browser.close();
 }

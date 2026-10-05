@@ -10,13 +10,13 @@ import appFontCss from "../app/font.css?url";
 import tiptapCss from "../styles/tiptap.scss?url";
 import landingCss from "@/components/home/landing.css?url";
 import { NextIntlClientProvider } from "@/i18n/compat/client";
-import { useEffect } from "react";
 import zhMessages from "@/i18n/locales/zh.json";
 import enMessages from "@/i18n/locales/en.json";
 import { Providers } from "@/app/providers";
 import { Toaster } from "@/components/ui/sonner";
 import { getLocaleFromPathname, getPreferredLocale } from "@/i18n/runtime";
 import { ReactGrab } from "@/components/dev/ReactGrab";
+import { useWorkspaceSettings } from "@/lib/workspace-settings-client";
 
 const defaultFontPreloadLinks = [
   {
@@ -84,16 +84,13 @@ function RootComponent() {
   const pathname = useLocation({
     select: (location) => location.pathname,
   });
-  const locale = getPreferredLocale(pathname);
+  const savedLocale = useWorkspaceSettings(state => state.snapshot?.entries.preferences?.value.locale);
+  const locale = getLocaleFromPathname(pathname) ?? savedLocale ?? getPreferredLocale(pathname);
   const landingLocale = getLocaleFromPathname(pathname);
   const isLandingPage =
     landingLocale !== null &&
     pathname.replace(/\/$/, "") === `/${landingLocale}`;
   const messages = locale === "en" ? enMessages : zhMessages;
-
-  useEffect(() => {
-    document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000`;
-  }, [locale]);
 
   return (
     <html lang={locale} suppressHydrationWarning>

@@ -1,5 +1,6 @@
 import { Check, Monitor, Moon, Palette, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/shared/ThemeProvider";
+import { savePreference } from "@/lib/workspace-settings-client";
 import { useTranslations } from "@/i18n/compat/client";
 import {
   Card,
@@ -82,7 +83,7 @@ export default function ThemeSettings() {
                   name="theme"
                   value={value}
                   checked={theme === value}
-                  onChange={() => setTheme(value)}
+                  onChange={() => { setTheme(value); savePreference("theme", value); }}
                   className="peer sr-only"
                   aria-label={t(value)}
                 />

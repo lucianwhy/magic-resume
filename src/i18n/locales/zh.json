@@ -48,8 +48,8 @@
       "storage": {
         "badge": "隐私安全",
         "title": "数据安全，隐私优先",
-        "description": "简历保存在当前浏览器中，也可以选择本地文件夹备份。数据由你管理，导出后随时带走。",
-        "item1": "本地文件存储",
+        "description": "简历与配置保存在本机数据库中，也可以选择本地文件夹备份。网页、CLI 和 MCP 共用数据，导出后随时带走。",
+        "item1": "本机数据库存储",
         "item1_description": "本地保存，支持选择文件夹备份",
         "item2": "多种导出格式",
         "item2_description": "支持 PDF、PNG、JSON 和 Markdown",
@@ -85,7 +85,7 @@
         },
         {
           "question": "我的简历数据安全吗？",
-          "answer": "魔方简历采用本地存储方式，简历数据保存在当前浏览器中，支持选择本地文件夹备份。使用 AI 功能时，相关内容会发送给您配置的模型服务商处理。"
+          "answer": "简历与 AI 配置保存在本机 PostgreSQL 数据库中，支持导出备份。使用 AI 功能时，相关内容会发送给您配置的模型服务商处理。"
         },
         {
           "question": "支持哪些简历格式导出？",
@@ -229,11 +229,6 @@
           "visionTestFailed": "未能正确识别测试图片，请确认模型和接口支持图片输入"
         }
       },
-      "notice": {
-        "title": "注意",
-        "description": "建议在设置里中配置简历备份文件夹，防止您的数据可能会在浏览器清除缓存后丢失",
-        "goToSettings": "前往设置"
-      },
       "deleteConfirmTitle": "确认删除简历？",
       "deleteConfirmDescription": "此操作无法撤销。这将永久删除此简历，并从设备中移除数据。",
       "createDialog": {
@@ -279,6 +274,7 @@
         "description": "选择一个文件夹来同步和备份您的简历，数据仅存储在本地进行同步。",
         "currentSyncFolder": "当前本地备份文件夹",
         "noFolderConfigured": "尚未配置本地备份文件夹",
+        "reauthorize": "请在当前浏览器重新选择授权",
         "changeFolder": "更改文件夹",
         "selectFolder": "选择文件夹",
         "statusConfigured": "已配置",
@@ -357,7 +353,7 @@
           "providersHint": "选择厂商，配置一次即可",
           "providerModelsHint": "填写 API Key 后即可使用下方模型",
           "providerKeyPlaceholder": "填入该厂商的 API Key",
-          "keySharedHint": "此 Key 由该厂商下的所有模型共用，并自动保存在当前浏览器。",
+          "keySharedHint": "此 Key 由该厂商下的所有模型共用，并自动保存在本机数据库。",
           "compatibleService": "使用 OpenAI 兼容服务",
           "customEndpointActive": "正在使用自定义兼容服务地址",
           "compatibleServiceHint": "官方 OpenAI Key 保持默认地址；中转或兼容服务请填写其提供的 API 根地址。",
@@ -368,7 +364,7 @@
           "recommended": "推荐",
           "usedByText": "文字助手使用中",
           "usedByPdf": "PDF 解析使用中",
-          "formHint": "配置会自动保存在当前浏览器",
+          "formHint": "配置会自动保存到本机数据库",
           "configured": "已配置",
           "textTag": "文字",
           "textChange": "选择文字助手模型",
@@ -386,7 +382,7 @@
           "libraryEmpty": "添加一个模型后，就能在这里管理和切换。",
           "emptyTitle": "连接你的第一个模型",
           "emptyDescription": "填入服务商的 API Key 和模型 ID，即可用于简历润色。支持图片输入的模型，还可以用于 PDF 导入。",
-          "localStorage": "配置仅保存在当前浏览器；调用时发送至你选择的服务商。",
+          "localStorage": "配置与 API Key 保存在本机数据库；调用时发送至你选择的服务商。",
           "newModel": "添加模型连接",
           "editModel": "模型配置",
           "unsaved": "尚未保存",
@@ -531,7 +527,7 @@
       "printDesc": "调用系统打印工具另存为 PDF，当主渲染拥堵或需手动干预边距时的备用方案。",
       "jsonDesc": "保存您的配置档案副本。日后更换设备或清理缓存后，可使用此文件一键无损导入恢复进度。",
       "markdownDesc": "转换为极简的文本标记语言文件，方便快速粘贴给各种 AI 模型或是其他文本编辑器。",
-      "privacyNotice": "魔方简历承诺绝不收集、上传或存储您的任何简历数据，您的隐私完全受到保护。"
+      "privacyNotice": "简历保存在本机数据库。使用 AI 或在线 PDF 导出时，相关内容会发送至对应服务；也可选择本机导出方式。"
     },
     "button": {
       "export": "导出",

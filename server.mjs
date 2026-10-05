@@ -2,11 +2,12 @@ import { createServer } from "node:http";
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { extname, normalize, resolve } from "node:path";
 import { Readable } from "node:stream";
-import serverEntry from "./dist/server/server.js";
+if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+const { default: serverEntry } = await import("./dist/server/server.js");
 
 const clientDir = resolve(process.cwd(), "dist/client");
 const port = Number(process.env.PORT || 3000);
-const host = process.env.HOSTNAME || "0.0.0.0";
+const host = process.env.HOST || "127.0.0.1";
 
 const MIME_TYPES = {
   ".css": "text/css; charset=utf-8",
@@ -97,6 +98,13 @@ createServer(async (req, res) => {
     const hostHeader = req.headers.host || `localhost:${port}`;
     const protocol = (req.headers["x-forwarded-proto"] || "http").toString().split(",")[0].trim();
     const url = new URL(req.url || "/", `${protocol}://${hostHeader}`);
+
+    if ((url.pathname.startsWith("/api/resumes") || url.pathname.startsWith("/api/workspace")) &&
+        !["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress ?? "")) {
+      res.writeHead(403, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+      res.end(JSON.stringify({ code: "localAccessOnly" }));
+      return;
+    }
 
     if (tryServeStatic(req, res, url)) return;
 

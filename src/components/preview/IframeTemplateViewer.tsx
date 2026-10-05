@@ -4,6 +4,7 @@ import { useParams } from "@tanstack/react-router";
 import ResumeTemplateComponent from "../templates";
 import { cn } from "../../lib/utils";
 import { normalizeFontFamily } from "@/utils/fonts";
+import { useLocale } from "@/i18n/compat/client";
 import {
   TEMPLATE_PREVIEW_HEIGHT_PX,
   TEMPLATE_PREVIEW_WIDTH_PX,
@@ -20,17 +21,11 @@ const IframeTemplateViewer = () => {
       ? new URLSearchParams(window.location.search)
       : null;
   const localeParam = searchParams?.get("locale");
-  const cookieLocale =
-    typeof document !== "undefined"
-      ? document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("NEXT_LOCALE="))
-        ?.split("=")[1]
-      : null;
+  const preferredLocale = useLocale();
   const locale = isTemplatePreviewLocale(localeParam)
     ? localeParam
-    : isTemplatePreviewLocale(cookieLocale)
-      ? cookieLocale
+    : isTemplatePreviewLocale(preferredLocale)
+      ? preferredLocale
       : "zh";
   const isSnapshotMode = searchParams?.get("snapshot") === "1";
 

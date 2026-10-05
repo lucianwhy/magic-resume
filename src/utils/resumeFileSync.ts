@@ -28,7 +28,7 @@ export const syncResumesFromDirectory = async (
     failed: 0,
   };
 
-  if (typeof window === "undefined" || typeof indexedDB === "undefined") {
+  if (typeof window === "undefined") {
     return result;
   }
 

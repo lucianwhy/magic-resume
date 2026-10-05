@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { mkdir } from "node:fs/promises";
 import { chromium, webkit } from "playwright";
@@ -21,12 +22,19 @@ for (const engine of [chromium, webkit]) {
     page.on("pageerror", (error) => pageErrors.push(error.message));
     const resume = {
       ...initialResumeState,
-      id: "mobile-workbench-test",
+      id: `mobile-workbench-${randomUUID()}`,
       createdAt: "2026-09-27T00:00:00.000Z",
       updatedAt: "2026-09-27T00:00:00.000Z",
       activeSection: "skills",
       skillContent: "<p>Scrollable resume content</p>".repeat(40),
     };
+    t.after(async () => {
+      const response = await fetch(`${origin}/api/resumes/${resume.id}`);
+      if (response.ok) {
+        const saved = await response.json();
+        await fetch(`${origin}/api/resumes/${resume.id}`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expectedRevision: saved.revision, mutationId: randomUUID() }) });
+      }
+    });
     await page.goto(origin);
     await page.evaluate((data) => {
       localStorage.setItem("resume-storage", JSON.stringify({
@@ -94,7 +102,15 @@ for (const engine of [chromium, webkit]) {
     await editor.click();
     await page.keyboard.press("End");
     await page.keyboard.type(" Mobile edit retained");
-    assert.match(await page.evaluate(() => JSON.parse(localStorage.getItem("resume-storage")!).state.resumes["mobile-workbench-test"].skillContent), /Mobile edit retained/);
+    const deadline = Date.now() + 15000;
+    let savedHtml = "";
+    while (Date.now() < deadline) {
+      const saved = await (await fetch(`${origin}/api/resumes/${resume.id}`)).json();
+      savedHtml = saved.resume.skillContent;
+      if (savedHtml.includes("Mobile edit retained")) break;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    assert.match(savedHtml, /Mobile edit retained/);
 
     await page.setViewportSize({ width: 1024, height: 768 });
     assert.equal(await contentButton.isVisible(), false);
@@ -102,6 +118,7 @@ for (const engine of [chromium, webkit]) {
     // A client-side route change must release the document scroll lock.
     await page.locator("header").getByText(/^(魔方简历|Magic Resume)$/).click();
     await page.waitForURL("**/app/dashboard/resumes");
+    await page.waitForFunction(() => !document.body.classList.contains("workbench-body-lock"));
     assert.equal(await page.locator("body").evaluate((body) => body.classList.contains("workbench-body-lock")), false);
     assert.deepEqual(pageErrors, []);
   });

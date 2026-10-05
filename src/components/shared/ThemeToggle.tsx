@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "./ThemeProvider";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { savePreference, useWorkspaceSettings } from "@/lib/workspace-settings-client";
 
 const ThemeToggle = ({ children }: { children?: React.ReactNode }) => {
   const { theme, setTheme, systemTheme } = useTheme();
@@ -26,6 +27,10 @@ const ThemeToggle = ({ children }: { children?: React.ReactNode }) => {
 
   // 获取当前实际主题
   const currentTheme = theme === "system" ? systemTheme : theme;
+  const selectTheme = (value: string) => {
+    setTheme(value);
+    if (useWorkspaceSettings.getState().phase === "ready") savePreference("theme", value);
+  };
 
   return (
     <DropdownMenu>
@@ -59,13 +64,13 @@ const ThemeToggle = ({ children }: { children?: React.ReactNode }) => {
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
+        <DropdownMenuItem onClick={() => selectTheme("light")}>
           Light
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
+        <DropdownMenuItem onClick={() => selectTheme("dark")}>
           Dark
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
+        <DropdownMenuItem onClick={() => selectTheme("system")}>
           System
         </DropdownMenuItem>
       </DropdownMenuContent>

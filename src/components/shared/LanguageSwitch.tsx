@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { locales, localeNames } from "@/i18n/config";
 import { getLocaleFromPathname, replacePathLocale } from "@/i18n/runtime";
+import { savePreference, useWorkspaceSettings } from "@/lib/workspace-settings-client";
 
 export default function LanguageSwitch() {
   const locale = useLocale();
@@ -19,7 +20,7 @@ export default function LanguageSwitch() {
   });
 
   const handleSwitchLocale = (nextLocale: (typeof locales)[number]) => {
-    document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000`;
+    if (useWorkspaceSettings.getState().phase === "ready") savePreference("locale", nextLocale);
 
     const currentPathLocale = getLocaleFromPathname(pathname);
     if (currentPathLocale) {

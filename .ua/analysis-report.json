@@ -1,0 +1,278 @@
+{
+  "generatedAt": "2026-10-05T10:16:09.900Z",
+  "baseCommit": "554cdfa638a33bc50b8fb43c47e7962189e99e8d",
+  "branch": "main2DB",
+  "includesUncommittedWorkspaceFiles": true,
+  "tool": "Egonex-AI/Understand-Anything 2.9.7",
+  "outputLanguage": "zh",
+  "filesAnalyzed": 366,
+  "fileCategories": {
+    "infra": 6,
+    "config": 11,
+    "docs": 9,
+    "code": 335,
+    "markup": 5
+  },
+  "stats": {
+    "totalNodes": 833,
+    "totalEdges": 3151,
+    "totalLayers": 10,
+    "tourSteps": 14,
+    "nodeTypes": {
+      "file": 340,
+      "function": 462,
+      "class": 1,
+      "config": 12,
+      "service": 6,
+      "pipeline": 3,
+      "document": 9
+    },
+    "edgeTypes": {
+      "contains": 760,
+      "exports": 354,
+      "imports": 1145,
+      "calls": 662,
+      "depends_on": 176,
+      "tested_by": 25,
+      "configures": 9,
+      "deploys": 2,
+      "related": 5,
+      "documents": 13
+    }
+  },
+  "layers": [
+    {
+      "id": "layer:routing",
+      "name": "路由与应用入口层",
+      "files": 44
+    },
+    {
+      "id": "layer:ui",
+      "name": "编辑与交互界面层",
+      "files": 105
+    },
+    {
+      "id": "layer:templates",
+      "name": "简历模板层",
+      "files": 95
+    },
+    {
+      "id": "layer:state",
+      "name": "客户端状态与本地存储层",
+      "files": 13
+    },
+    {
+      "id": "layer:api",
+      "name": "AI 与代理服务层",
+      "files": 16
+    },
+    {
+      "id": "layer:utility",
+      "name": "数据契约与工具层",
+      "files": 32
+    },
+    {
+      "id": "layer:i18n",
+      "name": "国际化与语言兼容层",
+      "files": 13
+    },
+    {
+      "id": "layer:test",
+      "name": "自动化验证层",
+      "files": 12
+    },
+    {
+      "id": "layer:infrastructure",
+      "name": "构建与开发基础设施层",
+      "files": 31
+    },
+    {
+      "id": "layer:documentation",
+      "name": "文档与项目说明层",
+      "files": 9
+    }
+  ],
+  "tourTitles": [
+    "项目概览",
+    "路由与共享环境",
+    "简历与模板契约",
+    "状态与本地正文",
+    "授权目录同步",
+    "编辑与移动交互",
+    "模板装配",
+    "预览与单页适配",
+    "导出与打印",
+    "AI 配置与任务",
+    "AI 服务与文本流",
+    "PDF 导入链路",
+    "回归验证入口",
+    "构建与数据库准备"
+  ],
+  "schemaValidation": "passed",
+  "validationIssues": [],
+  "validationWarnings": [
+    "Node 'config:pnpm-workspace.yaml' has no edges (orphan)",
+    "Node 'config:.github/FUNDING.yml' has no edges (orphan)",
+    "Node 'file:fonts/fonts.conf' has no edges (orphan)",
+    "Node 'file:postcss.config.mjs' has no edges (orphan)",
+    "Node 'file:src/routes/app/dashboard/index.tsx' has no edges (orphan)",
+    "Node 'file:src/routes/app/index.tsx' has no edges (orphan)",
+    "Node 'file:src/types/global.d.ts' has no edges (orphan)",
+    "Node 'file:src/types/mark.js.d.ts' has no edges (orphan)",
+    "Node 'file:src/vite-env.d.ts' has no edges (orphan)"
+  ],
+  "assemblyReview": {
+    "fixedSectionOk": false,
+    "nodesRecovered": 0,
+    "edgesRestored": 13,
+    "crossBatchEdgesAdded": 0,
+    "typesRemapped": 0,
+    "complexityRemapped": 0,
+    "notes": [
+      "合并的 13 条 tested_by 删除存在上游命名识别限制：官方脚本仅识别 JS/TS 的 .test/.spec 标记，未识别本仓库实际浏览器测试 .browser.ts 和 .browser.mjs。已逐项读取测试及相关组件源码，恢复全部 13 条有依据的 production → test 边；因此 fixedSectionOk 为 false，问题已在当前图谱修正。",
+      "合并初次删除的 6 条 en/zh.json imports 已由官方 importMap 恢复步骤正确恢复，目标均为现存 config:src/i18n/locales/{en,zh}.json，不需要创建重复 file: 节点。",
+      "核对完整 importMap：1145 条内部导入全部对应现有 imports 边，无缺失且无额外导入。",
+      "扫描库存 366 个文件全部由图谱文件级节点覆盖，无多余文件路径。833 个节点 ID 唯一、类型和复杂度有效；全部边两端存在，未发现悬空或重复边。",
+      "源码验证的浏览器测试包括初始简历数据导入、正文编辑及字号控件、移动工作台、简历 store、PDF/打印导出、AI 模型管理和首页 CSS。恢复关系描述测试覆盖，不表示本轮实际执行这些浏览器测试。",
+      "本地 PostgreSQL 仅为开发数据库，图谱和文档没有将其描述为已实现简历服务端存储或 MCP 同步。旧 Next 风格文件与当前 TanStack 路由在相关摘要中区分。"
+    ],
+    "validation": {
+      "inventoryFiles": 366,
+      "coveredFiles": 366,
+      "nodes": 833,
+      "edges": 3151,
+      "expectedImports": 1145,
+      "actualImports": 1145,
+      "missingImports": 0,
+      "danglingEdges": 0,
+      "duplicateNodes": 0,
+      "duplicateEdges": 0
+    },
+    "restoredTestEdges": [
+      {
+        "source": "file:src/config/initialResumeData.ts",
+        "target": "file:tests/font-size.browser.ts",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      },
+      {
+        "source": "file:src/config/initialResumeData.ts",
+        "target": "file:tests/mobile-workbench.browser.ts",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      },
+      {
+        "source": "file:src/components/shared/rich-editor/FontSizeSelect.tsx",
+        "target": "file:tests/font-size.browser.ts",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      },
+      {
+        "source": "file:src/components/shared/rich-editor/RichEditor.tsx",
+        "target": "file:tests/font-size.browser.ts",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      },
+      {
+        "source": "file:src/components/mobile/MobileWorkbench.tsx",
+        "target": "file:tests/mobile-workbench.browser.ts",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      },
+      {
+        "source": "file:src/utils/export.ts",
+        "target": "file:tests/font-size.browser.ts",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      },
+      {
+        "source": "file:src/utils/print.ts",
+        "target": "file:tests/font-size.browser.ts",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      },
+      {
+        "source": "file:src/store/useResumeStore.ts",
+        "target": "file:tests/preview.browser.mjs",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      },
+      {
+        "source": "file:src/store/useResumeStore.ts",
+        "target": "file:tests/base-info.browser.mjs",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      },
+      {
+        "source": "file:src/utils/export.ts",
+        "target": "file:tests/preview.browser.mjs",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      },
+      {
+        "source": "file:src/utils/print.ts",
+        "target": "file:tests/preview.browser.mjs",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      },
+      {
+        "source": "file:src/app/app/dashboard/ai/page.tsx",
+        "target": "file:tests/ai-models.browser.ts",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      },
+      {
+        "source": "file:src/components/home/landing.css",
+        "target": "file:tests/landing.browser.mjs",
+        "type": "tested_by",
+        "direction": "forward",
+        "weight": 0.5
+      }
+    ]
+  },
+  "semanticCorrections": [
+    "对照 src/routes/__root.tsx 修正文件摘要：补充 TanStack 根文档、国际化、主题、通知和路由出口职责。"
+  ],
+  "phaseWarnings": [
+    "Warning: compute-batches: community size 39 > max 35 — splitting via alphabetical chunking — modularity may decrease",
+    "Warning: compute-batches: community size 57 > max 35 — splitting via alphabetical chunking — modularity may decrease",
+    "Warning: compute-batches: community size 38 > max 35 — splitting via alphabetical chunking — modularity may decrease",
+    "Warning: compute-batches: community size 74 > max 35 — splitting via alphabetical chunking — modularity may decrease",
+    "Warning: compute-batches: community size 80 > max 35 — splitting via alphabetical chunking — modularity may decrease",
+    "Warning: compute-batches: neighborMap for src/i18n/compat/client.tsx has high 1-hop degree 102 — exceeds soft cap of 50 — keeping top 50 cross-batch entries (43 dropped by degree sort)",
+    "Warning: compute-batches: neighborMap for src/components/templates/shared/SectionWrapper.tsx has high 1-hop degree 74 — exceeds soft cap of 50 — keeping top 50 cross-batch entries (7 dropped by degree sort)",
+    "Warning: compute-batches: neighborMap for src/lib/richText.ts has high 1-hop degree 55 — exceeds soft cap of 50 — keeping top 40 cross-batch entries (0 dropped by degree sort)",
+    "Warning: compute-batches: neighborMap for src/types/resume.ts has high 1-hop degree 113 — exceeds soft cap of 50 — keeping top 50 cross-batch entries (40 dropped by degree sort)",
+    "Warning: compute-batches: neighborMap for src/lib/utils.ts has high 1-hop degree 126 — exceeds soft cap of 50 — keeping top 50 cross-batch entries (67 dropped by degree sort)",
+    "结构分析补充了关键 store、forwardRef、async generator 与测试回调；未将全部细小 Radix 包装器展开为函数节点。静态关系不能代替运行时验证。",
+    "本机默认 Python 版本无法解析合并脚本所需类型语法，已改用 Python 3.12 成功完成官方合并。",
+    "2.9.7 预构建 viewer release asset 返回 404，已使用官方 Vite dashboard 回退并完成构建。",
+    "Chrome DevTools MCP 未能连接当前 Chrome；已改用 Codex 内置浏览器完成图形、文件关系与源码面板验证。"
+  ],
+  "storageMigrationImplemented": false,
+  "mcpImplemented": false,
+  "dashboardValidation": {
+    "graphHTTPStatus": 200,
+    "tokenRequired": true,
+    "browser": "Codex In-app Browser",
+    "architectureVisible": true,
+    "tourStepsVisible": 14,
+    "storageLayerExpanded": true,
+    "resumeStoreDetailsVisible": true,
+    "sourcePanelVisible": true
+  },
+  "worktreeNotice": "Dashboard 基于 git commit metadata 对未提交文件显示改动提示；这些新增源配置文件已在本次366文件扫描和指纹基线中。未提交或推送分支。",
+  "orphanNotice": "9个孤立节点提示涉及配置、类型声明及生成路由关系；图谱排除了生成的 routeTree 文件，因此这些提示不代表文件未被运行时使用。"
+}

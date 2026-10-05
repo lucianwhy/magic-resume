@@ -29,7 +29,7 @@ Magic Resume 是一个现代化的在线简历编辑器，让创建专业简历�
 - 📤 导出为 PDF
 - 🔄 实时预览
 - 💾 自动保存
-- 🔒 硬盘级存储
+- 🔒 本地 PostgreSQL 存储与旧浏览器数据迁移
 
 ## 🛠️ 技术栈
 
@@ -47,8 +47,9 @@ Magic Resume 是一个现代化的在线简历编辑器，让创建专业简历�
 1. 克隆项目
 
 ```bash
-git clone git@github.com:JOYCEQL/magic-resume.git
+git clone https://github.com/lucianwhy/magic-resume.git
 cd magic-resume
+git checkout main2DB
 ```
 
 2. 安装依赖
@@ -57,13 +58,84 @@ cd magic-resume
 pnpm install
 ```
 
-3. 启动开发服务器
+3. 启动数据库、建表和开发服务器（无需 Docker）
 
 ```bash
+pnpm db:start
+pnpm db:migrate
 pnpm dev
 ```
 
 4. 打开浏览器访问 `http://localhost:3000`
+
+首次进入简历页面会导入此浏览器、此地址下的旧简历；数据库保留迁移备份，确认入库后清理旧浏览器存储。`localhost` 与 `127.0.0.1` 的浏览器存储不同，请使用原先的地址进行迁移。详见 [数据库存储与 API](docs/DATABASE_STORAGE.md) 和 [本地 PostgreSQL](docs/LOCAL_POSTGRES.md)。本分支为本机单人使用，公开部署前需要增加身份验证与数据权限。
+
+## 🤖 安装 CLI 与 MCP
+
+使用包含数据库迁移的 `main2DB` 分支代码，准备 Node.js 22.12+（本机已验证 Node.js 24）和 pnpm。先按上面的快速开始安装依赖、启动 PostgreSQL、执行迁移并保持 `pnpm dev` 运行；CLI、MCP 和网页共享 `http://127.0.0.1:3000` 的本机 API，无需 Docker。
+
+### CLI
+
+在仓库目录即可使用，无需全局安装：
+
+```bash
+pnpm resume --help
+pnpm resume list
+pnpm resume create --title "我的简历"
+pnpm resume get RESUME_ID
+pnpm resume patch RESUME_ID --revision 1 --file patch.json
+pnpm resume export RESUME_ID --output resume.json
+pnpm resume import --file resume.json
+```
+
+将 `RESUME_ID` 和版本号替换为 `get/list` 返回的真实值。`patch.json` 例如：
+
+```json
+{ "basic": { "title": "AI 应用开发工程师" } }
+```
+
+若需要从任意目录调用，可在仓库执行 `npm link`，之后使用 `magic-resume --help`；也可直接运行 `node /你的绝对路径/magic-resume/scripts/resume-cli.mjs list`。自动化使用 Node 入口可以得到纯 JSON 输出。更新、删除必须带版本号，冲突返回退出码 `2`。
+
+### MCP 客户端
+
+在仓库运行以下命令，为其他本机 MCP 客户端生成包含 Node 和仓库绝对路径的配置：
+
+```bash
+node scripts/resume-mcp-config.mjs
+```
+
+将生成的 `mcpServers` 条目合并进客户端配置，保留已有服务。通用配置结构：
+
+```json
+{
+  "mcpServers": {
+    "magic-resume": {
+      "command": "/Node可执行文件的绝对路径/node",
+      "args": ["/仓库绝对路径/magic-resume/scripts/resume-mcp.mjs"],
+      "env": { "MAGIC_RESUME_API_URL": "http://127.0.0.1:3000" }
+    }
+  }
+}
+```
+
+Codex 用户可直接登记 stdio 服务（替换两个绝对路径）：
+
+```bash
+codex mcp add magic-resume --env MAGIC_RESUME_API_URL=http://127.0.0.1:3000 -- /Node绝对路径/node /仓库绝对路径/magic-resume/scripts/resume-mcp.mjs
+codex mcp get magic-resume --json
+```
+
+重新加载 MCP 或开启新会话后，使用 `list_resumes`、`get_resume`、`create_resume`、`update_resume`、`delete_resume`。修改会自动同步到网页。通过其他端口启动网页时，同步更新 `MAGIC_RESUME_API_URL`。当前实现为本机 stdio，不能直接作为远程 ChatGPT 的公网 MCP URL。
+
+完整参数、栏目规则与备份说明见 [CLI 与 MCP 接入](docs/CLI_MCP.md)。
+
+## 💾 数据存储范围
+
+PostgreSQL 是可持久化业务数据的主存储：完整简历（照片、证书内容/链接、富文本、自定义栏目、模板和排版设置）、AI 模型与服务地址、API Key、文字/PDF 模型分配、主题、语言、侧栏状态、最近打开的简历，以及目录名称与授权配置记录。
+
+首次进入本机网页会迁入当前浏览器同地址下的旧配置；确认简历和配置入库后清理旧浏览器副本，数据库保留迁移备份和导入记录。其他地址的旧数据需要在原地址完成迁移。API Key 当前存储于本机数据库 JSONB，数据库备份包含凭据，请仅按私人配置保存；API 限本机访问。
+
+应用不再向 localStorage、sessionStorage、IndexedDB 或 Cookie 写入业务数据。待保存编辑只在当前页面内存中；断网时请恢复连接重试，或在离开前导出，关闭页面后未提交的内存修改无法恢复。浏览器目录授权的 `FileSystemHandle` 无法序列化到 PostgreSQL，句柄也仅保留在内存中，刷新后重新选择同步文件夹；目录元数据仍在数据库中。撤销历史、加载状态和临时 AI 检查结果也是会话状态。原始 PDF 文件不会自动作为附件归档到数据库。详见 [数据库存储与 API](docs/DATABASE_STORAGE.md)。
 
 ## 📦 构建打包
 
@@ -82,6 +154,8 @@ AI_PROXY_URL=http://127.0.0.1:7890
 DeepSeek、通义千问和豆包保持直连。
 
 ## 🐳 Docker 部署
+
+`main2DB` 分支目前按本机 Node.js + PostgreSQL 使用；以下原有 Docker 部署尚未配置数据库，不能作为本分支的完整部署方式。数据库 API 也会拒绝非本机连接。
 
 ### Docker Compose
 

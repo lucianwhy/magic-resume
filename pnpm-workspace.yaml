@@ -1,0 +1,13 @@
+packages:
+  - '.'
+allowBuilds:
+  '@heroui/shared-utils': false
+  '@parcel/watcher': true
+  core-js: false
+  esbuild: true
+  sharp: true
+  workerd: false
+minimumReleaseAgeExclude:
+  - '@modelcontextprotocol/sdk@1.32.1'
+# Database commands install their isolated runtime, not the entire web app.
+verifyDepsBeforeRun: false

@@ -1,12 +1,12 @@
-import { cookies } from "next/headers";
 import { defaultLocale } from "./config";
+import { isSupportedLocale } from "./runtime";
+import { savePreference, settingsValue } from "@/lib/workspace-settings-client";
 
-const COOKIE_NAME = "NEXT_LOCALE";
-
+// Compatibility helpers for the old locale components; no browser cookies.
 export async function getUserLocale() {
-  return cookies().get(COOKIE_NAME)?.value || defaultLocale;
+  return settingsValue("preferences").locale ?? defaultLocale;
 }
-
 export async function setUserLocale(locale: string) {
-  cookies().set(COOKIE_NAME, locale);
+  if (!isSupportedLocale(locale)) throw new Error("Unsupported locale");
+  savePreference("locale", locale);
 }

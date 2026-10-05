@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import {
-  createJSONStorage,
   persist,
   type PersistStorage,
 } from "zustand/middleware";
@@ -21,10 +20,8 @@ interface AIConfigState extends AISettingsData {
   isConfigured: () => boolean;
 }
 
-export const createAIConfigStore = (storage?: PersistStorage<AISettingsData>) =>
-  create<AIConfigState>()(
-    persist<AIConfigState, [], [], AISettingsData>(
-      (set, get) => ({
+export const createAIConfigStore = (storage?: PersistStorage<AISettingsData>) => {
+  const creator: import("zustand").StateCreator<AIConfigState> = (set, get) => ({
         models: [],
         textModelId: null,
         pdfModelId: null,
@@ -69,12 +66,15 @@ export const createAIConfigStore = (storage?: PersistStorage<AISettingsData>) =>
             return task === "pdf" ? { pdfModelId: id } : { textModelId: id };
           }),
         isConfigured: () => isModelConfigured(getTaskModel(get(), "text")),
-      }),
+      });
+  if (!storage) return create<AIConfigState>()(creator);
+  return create<AIConfigState>()(
+    persist<AIConfigState, [], [], AISettingsData>(
+      creator,
       {
         name: "ai-config-storage",
         version: 1,
-        storage:
-          storage ?? createJSONStorage<AISettingsData>(() => localStorage),
+        storage,
         partialize: ({ models, textModelId, pdfModelId }) => ({
           models,
           textModelId,
@@ -88,5 +88,6 @@ export const createAIConfigStore = (storage?: PersistStorage<AISettingsData>) =>
       },
     ),
   );
+};
 
 export const useAIConfigStore = createAIConfigStore();

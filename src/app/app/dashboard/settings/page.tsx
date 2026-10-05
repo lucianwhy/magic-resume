@@ -19,12 +19,14 @@ import {
 import { useResumeStore } from "@/store/useResumeStore";
 import { syncResumesFromDirectory } from "@/utils/resumeFileSync";
 import ThemeSettings from "./ThemeSettings";
+import { useWorkspaceSettings } from "@/lib/workspace-settings-client";
 
 const SettingsPage = () => {
   const [directoryHandle, setDirectoryHandle] =
     useState<FileSystemDirectoryHandle | null>(null);
   const [folderPath, setFolderPath] = useState<string>("");
   const t = useTranslations();
+  const directoryRevision = useWorkspaceSettings(state => state.snapshot?.entries["file-sync"]?.revision);
   const updateResumeFromFile = useResumeStore(
     (state) => state.updateResumeFromFile
   );
@@ -34,6 +36,8 @@ const SettingsPage = () => {
       try {
         const handle = await getFileHandle("syncDirectory");
         const path = await getConfig("syncDirectoryPath");
+        setFolderPath(path ?? "");
+        setDirectoryHandle(null);
 
         if (handle && path) {
           const hasPermission = await verifyPermission(handle);
@@ -48,7 +52,7 @@ const SettingsPage = () => {
     };
 
     loadSavedConfig();
-  }, []);
+  }, [directoryRevision]);
 
   const handleSelectDirectory = async () => {
     try {
@@ -78,8 +82,8 @@ const SettingsPage = () => {
     try {
       setDirectoryHandle(null);
       setFolderPath("");
-      // Clear from IndexedDB
-      await storeFileHandle("syncDirectory", null as any);
+      // Clear the browser capability and its database metadata.
+      await storeFileHandle("syncDirectory", null);
       await storeConfig("syncDirectoryPath", "");
     } catch (error) {
       console.error("Error removing directory:", error);
@@ -146,7 +150,7 @@ const SettingsPage = () => {
                   ) : (
                     <div className="flex h-11 items-center justify-center sm:justify-start gap-2 rounded-xl border border-dashed border-border/80 bg-muted/20 px-3.5 text-xs sm:text-sm text-muted-foreground">
                       <FolderPlus className="size-4 shrink-0 text-muted-foreground/60" />
-                      <span>{t("dashboard.settings.syncDirectory.noFolderConfigured")}</span>
+                      <span>{folderPath ? `${folderPath} · ${t("dashboard.settings.syncDirectory.reauthorize")}` : t("dashboard.settings.syncDirectory.noFolderConfigured")}</span>
                     </div>
                   )}
                 </div>
@@ -161,7 +165,7 @@ const SettingsPage = () => {
                       ? t("dashboard.settings.syncDirectory.changeFolder")
                       : t("dashboard.settings.sync.select")}
                   </Button>
-                  {directoryHandle && (
+                  {(directoryHandle || folderPath) && (
                     <Button
                       onClick={handleRemoveDirectory}
                       variant="outline"

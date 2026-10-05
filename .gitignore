@@ -43,3 +43,13 @@ src/routeTree.gen.ts
 .history
 .agent
 .tanstack
+
+# Project-local PostgreSQL runtime and private connection settings
+/.local/
+/tools/local-postgres/node_modules/
+
+# Understand-Anything scratch artifacts
+/.ua/intermediate/
+/.ua/tmp/
+/.ua/.trash-*/
+/.ua/diff-overlay.json

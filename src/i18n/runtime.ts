@@ -20,17 +20,6 @@ export function getPreferredLocale(pathname: string): Locale {
     return localeFromPath;
   }
 
-  if (typeof document !== "undefined") {
-    const cookieLocale = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("NEXT_LOCALE="))
-      ?.split("=")[1];
-
-    if (cookieLocale && isSupportedLocale(cookieLocale)) {
-      return cookieLocale;
-    }
-  }
-
   return defaultLocale;
 }
 

@@ -1,102 +1,84 @@
-// 存储文件句柄和配置信息
-const DB_NAME = "FileHandleDB";
-const HANDLE_STORE = "handles";
-const CONFIG_STORE = "config";
-const DB_VERSION = 2;
+import { saveWorkspaceValue, settingsValue, flushWorkspaceSettings } from "@/lib/workspace-settings-client";
 
-let db: IDBDatabase | null = null;
+// A browser grant is a runtime capability, never a database credential.
+const handles = new Map<string, FileSystemHandle>();
+const LEGACY_DB = "FileHandleDB";
+let legacyRead: Promise<string | null> | undefined;
+let legacyPresent = false;
 
-const initDB = (): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    if (db) {
-      resolve();
-      return;
-    }
-
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => {
-      db = request.result;
-      resolve();
-    };
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(HANDLE_STORE)) {
-        db.createObjectStore(HANDLE_STORE);
-      }
-      if (!db.objectStoreNames.contains(CONFIG_STORE)) {
-        db.createObjectStore(CONFIG_STORE);
-      }
-    };
-  });
+export const storeFileHandle = async (key: string, handle: FileSystemHandle | null): Promise<void> => {
+  if (handle) handles.set(key, handle); else handles.delete(key);
+  if (key === "syncDirectory") {
+    saveWorkspaceValue("file-sync", { directoryName: handle?.name ?? "", configured: !!handle, mode: "readwrite", ...(handle ? { authorizedAt: new Date().toISOString() } : {}) });
+    await flushWorkspaceSettings();
+  }
 };
 
-export const storeFileHandle = async (
-  key: string,
-  handle: FileSystemHandle
-): Promise<void> => {
-  await initDB();
-  if (!db) throw new Error("Database not initialized");
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(HANDLE_STORE, "readwrite");
-    const store = transaction.objectStore(HANDLE_STORE);
-    const request = store.put(handle, key);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-  });
+export const getFileHandle = async (key: string): Promise<FileSystemHandle | null> => {
+  const handle = handles.get(key) ?? null;
+  const config = settingsValue("file-sync");
+  return key === "syncDirectory" && "configured" in config && (!config.configured || handle?.name !== config.directoryName) ? null : handle;
 };
 
-export const getFileHandle = async (
-  key: string
-): Promise<FileSystemHandle | null> => {
-  await initDB();
-  if (!db) throw new Error("Database not initialized");
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(HANDLE_STORE, "readonly");
-    const store = transaction.objectStore(HANDLE_STORE);
-    const request = store.get(key);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-  });
+export const storeConfig = async (key: string, value: unknown): Promise<void> => {
+  if (key !== "syncDirectoryPath" || typeof value !== "string") throw new Error("Unsupported directory setting");
+  saveWorkspaceValue("file-sync", { ...settingsValue("file-sync"), directoryName: value, configured: !!value, mode: "readwrite" });
+  await flushWorkspaceSettings();
 };
 
-export const storeConfig = async (key: string, value: any): Promise<void> => {
-  await initDB();
-  if (!db) throw new Error("Database not initialized");
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(CONFIG_STORE, "readwrite");
-    const store = transaction.objectStore(CONFIG_STORE);
-    const request = store.put(value, key);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-  });
+export const getConfig = async (key: string): Promise<string | null> => {
+  return key === "syncDirectoryPath" ? settingsValue("file-sync").directoryName ?? "" : null;
 };
 
-export const getConfig = async (key: string): Promise<any> => {
-  await initDB();
-  if (!db) throw new Error("Database not initialized");
+// Read the previous IndexedDB exactly once for migration. Fresh installations
+// never create an IndexedDB database, including in browsers without databases().
+export const readLegacyDirectoryConfig = (): Promise<string | null> => {
+  if (legacyRead) return legacyRead;
+  legacyRead = (async () => {
+    if (typeof indexedDB === "undefined") return null;
+    if (indexedDB.databases && !(await indexedDB.databases()).some(db => db.name === LEGACY_DB)) return null;
+    return new Promise<string | null>((resolve, reject) => {
+      let absent = false;
+      const request = indexedDB.open(LEGACY_DB);
+      request.onupgradeneeded = () => { absent = true; request.transaction?.abort(); };
+      request.onerror = () => absent ? resolve(null) : reject(request.error);
+      request.onsuccess = () => {
+        legacyPresent = true;
+        const db = request.result;
+        const stores = ["handles", "config"].filter(name => db.objectStoreNames.contains(name));
+        if (!stores.length) { db.close(); resolve(null); return; }
+        let directory: string | null = null;
+        const transaction = db.transaction(stores, "readonly");
+        if (stores.includes("config")) {
+          const config = transaction.objectStore("config").get("syncDirectoryPath");
+          config.onsuccess = () => { if (typeof config.result === "string") directory = config.result; };
+        }
+        if (stores.includes("handles")) {
+          const handle = transaction.objectStore("handles").get("syncDirectory");
+          handle.onsuccess = () => { if (handle.result) { handles.set("syncDirectory", handle.result); directory ??= handle.result.name; } };
+        }
+        transaction.oncomplete = () => { db.close(); resolve(directory); };
+        transaction.onabort = () => { db.close(); reject(transaction.error); };
+      };
+    });
+  })();
+  return legacyRead;
+};
 
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(CONFIG_STORE, "readonly");
-    const store = transaction.objectStore(CONFIG_STORE);
-    const request = store.get(key);
-
+export const clearLegacyDirectoryStorage = async (): Promise<void> => {
+  if (typeof indexedDB === "undefined" || !legacyPresent) return;
+  // No connection stays open after the read transaction.
+  await new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(LEGACY_DB);
+    request.onsuccess = () => { legacyPresent = false; resolve(); };
     request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
+    request.onblocked = () => reject(new Error("legacyDirectoryStorageBlocked"));
   });
 };
 
 export const verifyPermission = async (
   handle: FileSystemHandle,
-  mode: FileSystemPermissionMode = "readwrite"
+  mode: "read" | "readwrite" = "readwrite"
 ): Promise<boolean> => {
   if (!handle) {
     return false;
@@ -105,12 +87,16 @@ export const verifyPermission = async (
   const options = { mode };
 
   // 检查当前权限
-  if ((await handle.queryPermission(options)) === "granted") {
+  const capability = handle as FileSystemHandle & {
+    queryPermission(options: { mode: "read" | "readwrite" }): Promise<PermissionState>;
+    requestPermission(options: { mode: "read" | "readwrite" }): Promise<PermissionState>;
+  };
+  if ((await capability.queryPermission(options)) === "granted") {
     return true;
   }
 
   // 请求权限
-  if ((await handle.requestPermission(options)) === "granted") {
+  if ((await capability.requestPermission(options)) === "granted") {
     return true;
   }
 

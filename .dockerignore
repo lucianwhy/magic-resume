@@ -9,3 +9,7 @@ README.md
 .env.development.local
 .env.test.local
 .env.production.local
+.env*.local
+.local
+.ua
+tools/local-postgres/node_modules
