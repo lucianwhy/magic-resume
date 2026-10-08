@@ -5,6 +5,11 @@ import { ResumeStorageError, validateResumeId } from "../resume-storage-contract
 const MAX_BODY_BYTES = 32 * 1024 * 1024;
 const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
 
+export const requestClient = (request: Request) => {
+  const source = request.headers.get("X-Magic-Resume-Client");
+  return source === "cli" || source === "mcp" ? source : "web";
+};
+
 export function guardResumeRequest(request: Request) {
   const url = new URL(request.url);
   if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) throw new ResumeStorageError("localAccessOnly", 403);
@@ -40,10 +45,11 @@ export async function readStorageBody(request: Request): Promise<Record<string, 
 export async function handleResumeStorage(request: Request, id?: string, repository?: ResumeRepository): Promise<Response> {
   try {
     guardResumeRequest(request);
-    const repo = repository ?? new ResumeRepository(getDatabase());
+    const repo = repository ?? new ResumeRepository(getDatabase(), requestClient(request));
     if (id) validateResumeId(id);
     if (request.method === "GET") {
       if (id) return json(await repo.get(id));
+      if (new URL(request.url).searchParams.get("deleted") === "1") return json(await repo.listDeleted());
       const version = await repo.snapshotVersion();
       if (request.headers.get("If-None-Match") === version) {
         return new Response(null, { status: 304, headers: { ETag: version, "Cache-Control": "no-store" } });

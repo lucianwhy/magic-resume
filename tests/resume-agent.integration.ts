@@ -6,6 +6,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createServer } from "node:net";
+import { createServer as createHTTPServer } from "node:http";
 import pg from "pg";
 import { chromium } from "playwright";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -52,7 +53,8 @@ test("CLI, real stdio MCP and browser share the same database, revisions and con
   mcp = new Client({ name: "magic-resume-integration-test", version: "1.0.0" });
   const transport = new StdioClientTransport({ command: process.execPath, args: [mcpScript], cwd, env: { MAGIC_RESUME_API_URL: origin }, stderr: "pipe" });
   await mcp.connect(transport);
-  const tools = await mcp.listTools(); assert.deepEqual(tools.tools.map(tool => tool.name).sort(), ["create_resume", "delete_resume", "get_resume", "list_resumes", "update_resume"]);
+  const tools = await mcp.listTools(); assert.equal(tools.tools.length, 18);
+  for (const name of ["create_resume", "delete_resume", "get_resume", "list_resumes", "update_resume", "edit_resume_item", "list_resume_history", "restore_resume_version", "save_ai_model", "test_ai_model"]) assert.ok(tools.tools.some(tool => tool.name === name));
   assert.equal((await mcp.readResource({ uri: "magic-resume://guide" })).contents.length, 1);
   const created = await cli(origin, ["create", "--title", "CLI 与 MCP 验收", "--file", "-"], JSON.stringify({
     basic: { name: "初始姓名", photo: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aFbkAAAAASUVORK5CYII=", githubKey: "test-secret" },
@@ -101,6 +103,69 @@ test("CLI, real stdio MCP and browser share the same database, revisions and con
   const secondCreate = await mcp.callTool({ name: "create_resume", arguments: { title: "MCP 新建", locale: "en" } }); assert.equal(secondCreate.isError, undefined);
   const secondRecord = secondCreate.structuredContent as any;
   assert.equal((await cli(origin, ["delete", secondRecord.resume.id, "--revision", String(secondRecord.revision)])).code, 0);
+  // Restore the deleted synthetic resume, then edit one item through both entry points.
+  const oldHistory = await mcp.callTool({ name: "list_resume_history", arguments: { id } });
+  const history = oldHistory.structuredContent as any;
+  assert.equal(history.deleted, true);
+  const restore = await mcp.callTool({ name: "restore_resume_version", arguments: { id, targetRevision: 1, expectedRevision: history.currentRevision } });
+  assert.equal(restore.isError, undefined, JSON.stringify(restore));
+  const restored = await get(); assert.equal(restored.resume.basic.githubKey, "test-secret");
+  const itemMutation = randomUUID();
+  const operation = { section: "experience", action: "add", item: { company: "条目测试公司", position: "实习生", date: "2026", details: "<p>保持正文</p>" } };
+  const addedCLI = await cli(origin, ["item", id, "--revision", String(restored.revision), "--file", "-", "--mutation-id", itemMutation], JSON.stringify(operation));
+  assert.equal(addedCLI.code, 0, addedCLI.stderr); const added = JSON.parse(addedCLI.stdout);
+  const retried = await cli(origin, ["item", id, "--revision", String(restored.revision), "--file", "-", "--mutation-id", itemMutation], JSON.stringify(operation));
+  assert.equal(retried.code, 0, retried.stderr); assert.equal(JSON.parse(retried.stdout).revision, added.revision);
+  const itemId = added.resume.experience[0].id;
+  const itemUpdate = await mcp.callTool({ name: "edit_resume_item", arguments: { id, expectedRevision: added.revision, operation: { section: "experience", action: "update", itemId, item: { company: "科大讯飞" } } } });
+  assert.equal(itemUpdate.isError, undefined, JSON.stringify(itemUpdate));
+  const withItem = await get(); assert.equal(withItem.resume.experience[0].company, "科大讯飞");
+  assert.equal(withItem.resume.experience[0].details, "<p>保持正文</p>");
+  await page.waitForFunction(async id => (await import("/src/store/useResumeStore.ts" as string)).useResumeStore.getState().resumes[id]?.experience[0]?.company === "科大讯飞", id);
+  const historyCLI = await cli(origin, ["history", id, "--limit", "2"]); assert.equal(historyCLI.code, 0, historyCLI.stderr);
+  const latestHistory = JSON.parse(historyCLI.stdout); assert.equal(latestHistory.versions[0].source, "mcp"); assert.equal(latestHistory.versions[1].source, "cli");
+  const version = await mcp.callTool({ name: "get_resume_version", arguments: { id, version: 1 } });
+  assert.ok(!JSON.stringify(version).includes("test-secret"));
+  const diff = await cli(origin, ["diff", id, "--from", "1", "--to", String(withItem.revision)]);
+  assert.equal(diff.code, 0, diff.stderr); assert.ok(JSON.parse(diff.stdout).changedFields.includes("experience"));
+  const restoredCLI = await cli(origin, ["restore", id, "--version", "1", "--revision", String(withItem.revision)]);
+  assert.equal(restoredCLI.code, 0, restoredCLI.stderr);
+  assert.equal((await get()).resume.experience.length, 0);
+  assert.equal((await get()).resume.basic.githubKey, "test-secret");
+  await cli(origin, ["delete", id, "--revision", String(JSON.parse(restoredCLI.stdout).revision)]);
+  const deletedList = await mcp.callTool({ name: "list_deleted_resumes", arguments: {} });
+  assert.ok((deletedList.structuredContent as any).resumes.some((r: any) => r.id === id));
+
+  // A local synthetic provider proves stored credentials are used without any external calls.
+  let providerRequests = 0;
+  const provider = createHTTPServer((req, res) => {
+    assert.equal(req.headers.authorization, "Bearer synthetic-provider-key"); providerRequests++;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify(req.url?.endsWith("/models") ? { data: [{ id: "synthetic-catalogue-model" }] } : { choices: [{ message: { content: "OK" } }] }));
+  });
+  await new Promise<void>(resolve => provider.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise<void>(resolve => provider.close(() => resolve())));
+  const providerURL = `http://127.0.0.1:${(provider.address() as { port: number }).port}/v1`;
+  const aiRead = await cli(origin, ["ai", "list"]); assert.equal(aiRead.code, 0, aiRead.stderr); const initialAI = JSON.parse(aiRead.stdout);
+  const aiSave = await cli(origin, ["ai", "save", "--revision", String(initialAI.revision), "--storage-id", initialAI.storageId, "--file", "-"], JSON.stringify({ id: "synthetic-profile", provider: "qwen", model: "qwen3-vl-plus", baseUrl: providerURL, apiKey: "synthetic-provider-key" }));
+  assert.equal(aiSave.code, 0, aiSave.stderr); assert.ok(!aiSave.stdout.includes("synthetic-provider-key"));
+  const aiConfig = JSON.parse(aiSave.stdout); assert.equal(aiConfig.models[0].hasApiKey, true);
+  const aiUpdate = await mcp.callTool({ name: "save_ai_model", arguments: { profile: { id: "synthetic-profile", name: "修改名称并保留 Key" }, expectedRevision: aiConfig.revision, storageId: initialAI.storageId } });
+  assert.equal(aiUpdate.isError, undefined, JSON.stringify(aiUpdate)); assert.ok(!JSON.stringify(aiUpdate).includes("synthetic-provider-key"));
+  const assign = await cli(origin, ["ai", "assign", "--task", "pdf", "--model-id", "synthetic-profile", "--revision", String((aiUpdate.structuredContent as any).revision), "--storage-id", initialAI.storageId]);
+  assert.equal(assign.code, 0, assign.stderr);
+  const modelTest = await mcp.callTool({ name: "test_ai_model", arguments: { modelId: "synthetic-profile" } });
+  assert.equal(modelTest.isError, undefined, JSON.stringify(modelTest)); assert.equal((modelTest.structuredContent as any).ok, true);
+  const discover = await cli(origin, ["ai", "discover", "--model-id", "synthetic-profile"]);
+  assert.equal(discover.code, 0, discover.stderr); assert.equal(JSON.parse(discover.stdout).models[0].id, "synthetic-catalogue-model");
+  assert.equal(providerRequests, 2);
+  await page.waitForFunction(async () => (await import("/src/store/useAIConfigStore.ts" as string)).useAIConfigStore.getState().models.some((m: any) => m.id === "synthetic-profile"));
+  const aiConflict = await cli(origin, ["ai", "delete", "--model-id", "synthetic-profile", "--revision", String(aiConfig.revision), "--storage-id", initialAI.storageId]);
+  assert.equal(aiConflict.code, 2); assert.ok(!aiConflict.stderr.includes("synthetic-provider-key"));
+  const aiRemoved = await mcp.callTool({ name: "delete_ai_model", arguments: { modelId: "synthetic-profile", expectedRevision: JSON.parse(assign.stdout).revision, storageId: initialAI.storageId } });
+  assert.equal(aiRemoved.isError, undefined, JSON.stringify(aiRemoved));
+  const afterAI = await mcp.callTool({ name: "list_ai_models", arguments: {} }); assert.equal((afterAI.structuredContent as any).models.length, 0);
+  const providers = await mcp.callTool({ name: "list_ai_providers", arguments: {} }); assert.ok((providers.structuredContent as any).providers.qwen);
   assert.deepEqual(errors, []);
-  console.log("Verified actual stdio initialize/tools/resources, CLI stdin/export/import, two-way browser synchronization, secret-preserving patches, conflicts and deletion.");
+  console.log("Verified actual stdio initialize/tools/resources, CLI stdin/export/import, two-way browser synchronization, precise items, history/diffs/restore, AI configuration and stored-key provider calls, conflicts and deletion.");
 });

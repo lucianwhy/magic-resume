@@ -127,6 +127,8 @@ codex mcp get magic-resume --json
 
 重新加载 MCP 或开启新会话后，使用 `list_resumes`、`get_resume`、`create_resume`、`update_resume`、`delete_resume`。修改会自动同步到网页。通过其他端口启动网页时，同步更新 `MAGIC_RESUME_API_URL`。当前实现为本机 stdio，不能直接作为远程 ChatGPT 的公网 MCP URL。
 
+现在提供 **18 个 MCP 工具**，包括 AI 模型配置/分配/测试、按条目编辑、历史版本比较和恢复；CLI 对应增加 `ai`、`item`、`history`、`version`、`diff`、`restore`、`deleted` 命令。更新后执行 `pnpm db:migrate` 并重新连接 MCP。AI 列表不会返回 API Key，模型测试由后端读取数据库凭据。
+
 完整参数、栏目规则与备份说明见 [CLI 与 MCP 接入](docs/CLI_MCP.md)。
 
 ## 💾 数据存储范围
@@ -135,7 +137,7 @@ PostgreSQL 是可持久化业务数据的主存储：完整简历（照片、证
 
 首次进入本机网页会迁入当前浏览器同地址下的旧配置；确认简历和配置入库后清理旧浏览器副本，数据库保留迁移备份和导入记录。其他地址的旧数据需要在原地址完成迁移。API Key 当前存储于本机数据库 JSONB，数据库备份包含凭据，请仅按私人配置保存；API 限本机访问。
 
-应用不再向 localStorage、sessionStorage、IndexedDB 或 Cookie 写入业务数据。待保存编辑只在当前页面内存中；断网时请恢复连接重试，或在离开前导出，关闭页面后未提交的内存修改无法恢复。浏览器目录授权的 `FileSystemHandle` 无法序列化到 PostgreSQL，句柄也仅保留在内存中，刷新后重新选择同步文件夹；目录元数据仍在数据库中。撤销历史、加载状态和临时 AI 检查结果也是会话状态。原始 PDF 文件不会自动作为附件归档到数据库。详见 [数据库存储与 API](docs/DATABASE_STORAGE.md)。
+应用不再向 localStorage、sessionStorage、IndexedDB 或 Cookie 写入业务数据。待保存编辑只在当前页面内存中；断网时请恢复连接重试，或在离开前导出，关闭页面后未提交的内存修改无法恢复。浏览器目录授权的 `FileSystemHandle` 无法序列化到 PostgreSQL，句柄也仅保留在内存中，刷新后重新选择同步文件夹；目录元数据仍在数据库中。编辑器撤销/重做、加载状态和临时 AI 检查结果是会话状态；另外提供持久化数据库历史，可用 CLI/MCP 查询和恢复。原始 PDF 文件不会自动作为附件归档到数据库。详见 [数据库存储与 API](docs/DATABASE_STORAGE.md)。
 
 ## 📦 构建打包
 

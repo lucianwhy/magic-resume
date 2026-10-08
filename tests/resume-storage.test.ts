@@ -27,7 +27,7 @@ test("migrations are idempotent and preserve the database identity", async () =>
   const identity = (await repo.list()).storageId;
   await migrateResumeDatabase(pool);
   assert.equal((await repo.list()).storageId, identity);
-  assert.equal((await pool.query("SELECT count(*) FROM magic_resume_schema_migrations")).rows[0].count, "3");
+  assert.equal((await pool.query("SELECT count(*) FROM magic_resume_schema_migrations")).rows[0].count, "4");
 });
 
 test("JSONB preserves rich text, Chinese, photos, custom sections and certificates", async () => {
@@ -124,4 +124,62 @@ test("conditional polling detects creates, edits and deletes without resending u
   assert.notEqual(changed.headers.get("ETag"), createdVersion);
   await repo.delete(resume.id, edited.revision, randomUUID());
   assert.equal((await list(changed.headers.get("ETag")!)).status, 200);
+});
+
+test("item edits preserve siblings and hidden fields, retry exactly once, and reject stale revisions", async () => {
+  const current = document();
+  current.basic.photo = "data:image/png;base64,cGhvdG8=";
+  current.basic.githubKey = "synthetic-hidden-secret";
+  current.experience = [
+    { id: "first", company: "旧公司", position: "开发", date: "2026/06 - 至今", details: "<p>保持正文</p>" },
+    { id: "second", company: "另一家公司", position: "实习", date: "2025", details: "<p>保持第二项</p>" },
+  ];
+  const saved = await repo.put(current, 0, randomUUID());
+  const operation = { section: "experience", action: "update", itemId: "first", item: { company: "科大讯飞" } };
+  const mutation = randomUUID();
+  const changed = await repo.editItems(current.id, operation, saved.revision, mutation);
+  assert.equal(changed.resume.experience[0].company, "科大讯飞");
+  assert.deepEqual(changed.resume.experience[1], current.experience[1]);
+  assert.equal(changed.resume.basic.photo, current.basic.photo);
+  assert.equal(changed.resume.basic.githubKey, current.basic.githubKey);
+  assert.deepEqual(await repo.editItems(current.id, operation, saved.revision, mutation), changed);
+  await assert.rejects(repo.editItems(current.id, operation, saved.revision, randomUUID()), { code: "revisionConflict" });
+  await assert.rejects(repo.editItems(current.id, { section: "experience", action: "reorder", itemIds: ["first"] }, changed.revision, randomUUID()), { code: "invalidItemOrder" });
+  assert.equal((await repo.get(current.id)).revision, changed.revision);
+  const reordered = await repo.editItems(current.id, { section: "experience", action: "reorder", itemIds: ["second", "first"] }, changed.revision, randomUUID());
+  assert.deepEqual(reordered.resume.experience.map(item => item.id), ["second", "first"]);
+  const addMutation = randomUUID();
+  const added = await repo.editItems(current.id, { section: "experience", action: "add", item: { company: "新公司" } }, reordered.revision, addMutation);
+  const retry = await repo.editItems(current.id, { section: "experience", action: "add", item: { company: "新公司" } }, reordered.revision, addMutation);
+  assert.deepEqual(added, retry); assert.equal(retry.resume.experience.length, 3);
+});
+
+test("history records all writes atomically, paginates, preserves secrets and restores deleted resumes as new revisions", async () => {
+  const cliRepo = new ResumeRepository(pool, "cli");
+  const current = document(); current.basic.githubKey = "synthetic-history-key";
+  const created = await cliRepo.put(current, 0, randomUUID());
+  const edited = await cliRepo.put({ ...created.resume, title: "新版" }, created.revision, randomUUID());
+  assert.equal((await cliRepo.history(current.id, 1)).versions[0].source, "cli");
+  const page = await cliRepo.history(current.id, 1);
+  const next = await cliRepo.history(current.id, 1, page.nextBefore!);
+  assert.equal(next.versions[0].revision, 1);
+  assert.deepEqual((await cliRepo.version(current.id, 1)).resume, created.resume);
+  const deleted = await cliRepo.delete(current.id, edited.revision, randomUUID());
+  assert.ok((await cliRepo.listDeleted()).resumes.some(item => item.id === current.id));
+  assert.equal((await cliRepo.history(current.id)).versions[0].action, "delete");
+  const mutation = randomUUID();
+  const restored = await cliRepo.restore(current.id, 1, deleted.revision, mutation);
+  assert.equal(restored.revision, deleted.revision + 1);
+  assert.equal(restored.resume.title, current.title);
+  assert.equal(restored.resume.basic.githubKey, current.basic.githubKey);
+  assert.deepEqual(await cliRepo.restore(current.id, 1, deleted.revision, mutation), restored);
+  assert.equal((await cliRepo.history(current.id)).versions[0].action, "restore");
+  await assert.rejects(cliRepo.restore(current.id, 1, deleted.revision, randomUUID()), { code: "revisionConflict" });
+  assert.equal((await cliRepo.get(current.id)).revision, restored.revision);
+  await pool.query("ALTER TABLE resume_versions ADD CONSTRAINT reject_history_write CHECK (document->>'title' <> 'history transaction failure')");
+  try {
+    await assert.rejects(cliRepo.put({ ...restored.resume, title: "history transaction failure" }, restored.revision, randomUUID()));
+    assert.equal((await cliRepo.get(current.id)).revision, restored.revision);
+    assert.equal((await cliRepo.history(current.id)).versions.length, 4);
+  } finally { await pool.query("ALTER TABLE resume_versions DROP CONSTRAINT reject_history_write"); }
 });

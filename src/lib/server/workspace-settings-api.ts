@@ -4,6 +4,8 @@ import { getDatabase } from "./database";
 import { guardResumeRequest, readStorageBody } from "./resume-storage-api";
 import { ResumeStorageError, validateMutationId, validateRevision } from "../resume-storage-contract";
 import { normalizeWorkspaceValue, workspaceKey, type WorkspaceSnapshot, type WorkspaceKey } from "../workspace-settings-contract";
+import { applyAIOperation } from "../ai-settings-operations";
+import { assertJSON } from "../resume-edit";
 import type { AISettingsData } from "../../config/ai-models";
 
 const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
@@ -28,6 +30,25 @@ export class WorkspaceRepository {
       if ((current?.revision ?? 0) !== revision || current?.last_mutation_id === mutationId) throw new ResumeStorageError("settingsConflict", 409);
       const result = await client.query(`INSERT INTO workspace_settings (key, value, last_mutation_id, last_mutation_hash) VALUES ($1,$2,$3,$4)
         ON CONFLICT (key) DO UPDATE SET value=excluded.value, revision=workspace_settings.revision+1, updated_at=now(), last_mutation_id=excluded.last_mutation_id, last_mutation_hash=excluded.last_mutation_hash RETURNING value,revision`, [key, JSON.stringify(value), mutationId, digest]);
+      await client.query("COMMIT"); return result.rows[0];
+    } catch (error) { await client.query("ROLLBACK"); throw error; } finally { client.release(); }
+  }
+  async mutateAI(operation: unknown, expectedRevision: unknown, mutationInput: unknown, storageId: unknown) {
+    assertJSON(operation);
+    const revision = validateRevision(expectedRevision), mutationId = validateMutationId(mutationInput), digest = hash({ aiOperation: operation });
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN"); await client.query("SELECT pg_advisory_xact_lock(48260102)");
+      if ((await client.query("SELECT storage_id FROM resume_workspace")).rows[0].storage_id !== storageId) throw new ResumeStorageError("databaseChanged", 409);
+      const current = (await client.query("SELECT * FROM workspace_settings WHERE key='ai' FOR UPDATE")).rows[0];
+      if (current?.last_mutation_id === mutationId) {
+        if (current.last_mutation_hash !== digest) throw new ResumeStorageError("settingsConflict", 409);
+        await client.query("COMMIT"); return { value: current.value, revision: current.revision };
+      }
+      if ((current?.revision ?? 0) !== revision) throw new ResumeStorageError("settingsConflict", 409);
+      const value = applyAIOperation(current?.value, operation, randomUUID);
+      const result = await client.query(`INSERT INTO workspace_settings (key,value,last_mutation_id,last_mutation_hash) VALUES ('ai',$1,$2,$3)
+        ON CONFLICT (key) DO UPDATE SET value=excluded.value,revision=workspace_settings.revision+1,updated_at=now(),last_mutation_id=excluded.last_mutation_id,last_mutation_hash=excluded.last_mutation_hash RETURNING value,revision`, [JSON.stringify(value),mutationId,digest]);
       await client.query("COMMIT"); return result.rows[0];
     } catch (error) { await client.query("ROLLBACK"); throw error; } finally { client.release(); }
   }

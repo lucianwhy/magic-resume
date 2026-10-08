@@ -47,6 +47,36 @@ const migrations = [{
 }, {
   version: "003-legacy-resume-backup",
   sql: `ALTER TABLE resume_legacy_imports ADD COLUMN source_document jsonb CHECK (source_document IS NULL OR jsonb_typeof(source_document) = 'object');`,
+}, {
+  version: "004-resume-history",
+  sql: `
+    CREATE TABLE resume_versions (
+      resume_id text NOT NULL REFERENCES resume_documents(id),
+      revision integer NOT NULL CHECK (revision > 0),
+      document jsonb NOT NULL,
+      deleted boolean NOT NULL,
+      action text NOT NULL CHECK (action IN ('baseline','create','update','delete','restore','import')),
+      source text NOT NULL,
+      mutation_id text,
+      recorded_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (resume_id, revision)
+    );
+    INSERT INTO resume_versions (resume_id,revision,document,deleted,action,source)
+      SELECT id,revision,document,deleted_at IS NOT NULL,'baseline','migration' FROM resume_documents;
+    CREATE FUNCTION record_resume_version() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+      IF TG_OP = 'UPDATE' AND OLD.revision = NEW.revision THEN RETURN NULL; END IF;
+      INSERT INTO resume_versions (resume_id,revision,document,deleted,action,source,mutation_id)
+      VALUES (NEW.id,NEW.revision,NEW.document,NEW.deleted_at IS NOT NULL,
+        CASE WHEN NEW.deleted_at IS NOT NULL THEN 'delete'
+          WHEN nullif(current_setting('magic_resume.action',true),'') IS NOT NULL THEN current_setting('magic_resume.action',true)
+          WHEN TG_OP = 'INSERT' THEN 'create' ELSE 'update' END,
+        coalesce(nullif(current_setting('magic_resume.client',true),''),'web'),NEW.last_mutation_id);
+      RETURN NULL;
+    END $$;
+    CREATE TRIGGER resume_version_after_write AFTER INSERT OR UPDATE ON resume_documents
+      FOR EACH ROW EXECUTE FUNCTION record_resume_version();
+  `,
 }];
 
 export async function migrateResumeDatabase(pool: Pool) {

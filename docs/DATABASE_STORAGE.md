@@ -37,6 +37,7 @@ pnpm dev
 
 | 表 | 用途 |
 | --- | --- |
+| `resume_versions` | 每次提交的完整历史快照、删除状态、动作和入口标签，支持版本比较与恢复 |
 | `resume_documents` | 完整 JSONB 文档、单调递增版本、时间、删除墓碑、最近一次写入的幂等标识 |
 | `resume_workspace` | 数据库工作区唯一标识，用于发现数据库更换并阻止旧恢复队列自动覆盖新库 |
 | `resume_legacy_imports` | 旧数据的来源 ID、内容摘要、导入目标 ID、原文档迁移备份（包括因删除墓碑跳过的内容） |
@@ -56,6 +57,10 @@ pnpm dev
 | GET | `/api/resumes/:id` | 读取一份 `{ resume, revision }`；缺失/已删除返回 404 |
 | PUT | `/api/resumes/:id` | 创建或更新完整文档，正文 `{ resume, expectedRevision, mutationId }` |
 | DELETE | `/api/resumes/:id` | 软删除，正文 `{ expectedRevision, mutationId }` |
+| GET | `/api/resumes/?deleted=1` | 最近 100 份已删除简历的摘要与当前版本 |
+| GET | `/api/resumes/:id/history` | 版本摘要，支持 `limit` / `before`；`?version=N` 读取快照 |
+| POST | `/api/resumes/:id/items` | 正文 `{ operation, expectedRevision, mutationId }`，按条目 ID 合并编辑 |
+| POST | `/api/resumes/:id/restore` | 正文 `{ targetRevision, expectedRevision, mutationId }`，恢复为新版本 |
 | POST | `/api/resumes/` | 事务导入旧数据，正文 `{ resumes: ResumeData[] }` |
 
 新建使用 `expectedRevision: 0`，已有记录使用 GET 返回的版本。每次不同的修改生成一个新 UUID `mutationId`；超时后重试同一次请求时保留原 UUID 和原正文。当前保存最近一次幂等写入，期间若另一端又提交了版本，旧请求会产生版本冲突。数据库生成更新日期、保留已有创建日期。
@@ -87,7 +92,7 @@ JS
 
 ## 工作区配置 API
 
-同样限定本机连接与同源请求，响应不缓存。不要将完整响应复制到日志，因为其中包含 AI Key。当前简历 CLI/MCP 工具不读取这些配置。
+同样限定本机连接与同源请求，响应不缓存。不要将完整响应复制到日志，因为其中包含 AI Key。AI 管理 CLI/MCP 使用独立的脱敏接口，只返回模型信息与 Key 配置状态。
 
 | 方法 | 路径 | 行为 |
 | --- | --- | --- |
@@ -95,7 +100,9 @@ JS
 | POST | `/api/workspace/` | 事务导入 `{ ai?, preferences?, "file-sync"? }`，数据库已存在配置优先 |
 | PUT | `/api/workspace/:key` | 正文 `{ value, expectedRevision, mutationId, storageId }`，校验数据库标识与版本 |
 
-仅允许 `ai`、`preferences`、`file-sync` 三种配置。配置请求限制 1 MiB，AI 模型最多 128 项。`settingsConflict` 返回 `409`，错误不携带包含 Key 的当前配置。`databaseChanged` 表示请求指向不同工作区，需要先导出未保存修改再重新加载。
+另外提供 `/api/workspace/ai-control`：GET 返回脱敏模型与版本，`?providers=1` 返回服务商目录；POST 的 `action` 支持 `upsert`、`delete`、`assign`、`test`、`discover`。配置写入仍要求 `expectedRevision` / `storageId` / `mutationId`；测试/发现只用模型 ID，不由调用者读取 Key。详细例子见 [CLI 与 MCP](CLI_MCP.md)。
+
+仅允许 `ai`、`preferences`、`file-sync` 三种存储配置。配置请求限制 1 MiB，AI 模型最多 128 项。`settingsConflict` 返回 `409`，错误不携带包含 Key 的当前配置。`databaseChanged` 表示请求指向不同工作区，需要先导出未保存修改再重新加载。
 
 ## 验证
 

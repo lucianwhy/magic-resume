@@ -77,3 +77,46 @@ test("settings API guards origin, rejects malformed input and redacts errors", a
   const wrongKeyType = ai(); (wrongKeyType.models[0] as any).apiKey = 42;
   await assert.rejects(repo.put("ai", wrongKeyType, 1, randomUUID(), storageId), { code: "invalidSettings" });
 });
+
+test("AI profile operations preserve omitted keys, retry generated IDs and deleted profiles, and enforce assignments", async () => {
+  const mutation = randomUUID();
+  const operation = { action: "upsert", profile: { provider: "qwen", apiKey: "synthetic-operation-key", model: "qwen3-vl-plus" } };
+  const created = await repo.mutateAI(operation, 0, mutation, storageId);
+  assert.deepEqual(await repo.mutateAI(operation, 0, mutation, storageId), created);
+  const id = created.value.models[0].id;
+  const edited = await repo.mutateAI({ action: "upsert", profile: { id, name: "保留凭据" } }, created.revision, randomUUID(), storageId);
+  assert.equal(edited.value.models[0].apiKey, "synthetic-operation-key");
+  const assigned = await repo.mutateAI({ action: "assign", task: "pdf", modelId: id }, edited.revision, randomUUID(), storageId);
+  assert.equal(assigned.value.pdfModelId, id);
+  await assert.rejects(repo.mutateAI({ action: "delete", modelId: id }, edited.revision, randomUUID(), storageId), { code: "settingsConflict" });
+  await assert.rejects(repo.mutateAI({ action: "delete", modelId: id }, assigned.revision, randomUUID(), randomUUID()), { code: "databaseChanged" });
+  const removal = randomUUID();
+  const deleted = await repo.mutateAI({ action: "delete", modelId: id }, assigned.revision, removal, storageId);
+  assert.deepEqual(await repo.mutateAI({ action: "delete", modelId: id }, assigned.revision, removal, storageId), deleted);
+  assert.equal(deleted.value.models.length, 0); assert.equal(deleted.value.pdfModelId, null);
+});
+
+test("AI control reads hide keys and provider calls resolve credentials by model id", async () => {
+  const { handleAIControl } = await import("../src/lib/server/ai-control-api");
+  await repo.mutateAI({ action: "upsert", profile: { id: "model-1", provider: "qwen", apiKey: "synthetic-private-key", model: "qwen3-vl-plus" } }, 0, randomUUID(), storageId);
+  const read = await handleAIControl(new Request("http://127.0.0.1/api/workspace/ai-control"), repo);
+  const publicData = await read.json();
+  assert.equal(publicData.models[0].hasApiKey, true); assert.equal(publicData.models[0].apiKey, undefined);
+  const request = (action: string, kind?: string) => new Request("http://127.0.0.1/api/workspace/ai-control", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, modelId: "model-1", ...(kind ? { kind } : {}) }) });
+  const tested = await handleAIControl(request("test"), repo, async (_url, options) => {
+    assert.equal((options!.headers as Record<string, string>).Authorization, "Bearer synthetic-private-key");
+    return Response.json({ choices: [{ message: { content: "OK" } }] });
+  });
+  assert.deepEqual(await tested.json(), { ok: true });
+  const discovered = await handleAIControl(request("discover"), repo, async () => Response.json({ data: [{ id: "model-from-service", owned_by: "synthetic-private-key" }] }));
+  const catalogue = await discovered.text(); assert.ok(!catalogue.includes("synthetic-private-key")); assert.match(catalogue, /model-from-service/);
+  const failed = await handleAIControl(request("test"), repo, async () => Response.json({ error: "synthetic-private-key" }, { status: 401 }));
+  assert.equal(failed.status, 401); assert.ok(!(await failed.text()).includes("synthetic-private-key"));
+  const vision = await handleAIControl(request("test", "pdf"), repo, async (_url, options) => {
+    const body = JSON.parse(options!.body as string);
+    assert.match(JSON.stringify(body), /data:image\/png;base64/);
+    return Response.json({ choices: [{ message: { content: '{"code":"incorrect"}' } }] });
+  });
+  assert.equal(vision.status, 502); assert.equal((await vision.json()).code, "visionTestFailed");
+  assert.equal((await handleAIControl(new Request("http://127.0.0.1/api/workspace/ai-control", { headers: { Origin: "https://evil.example" } }), repo)).status, 403);
+});

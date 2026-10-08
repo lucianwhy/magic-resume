@@ -1,3 +1,5 @@
+import { AgentError, patchResume, assertJSON } from "../lib/resume-edit";
+export { AgentError, patchResume, assertJSON, validateAgentResume } from "../lib/resume-edit";
 import { randomUUID } from "node:crypto";
 import { blankResumeState, blankResumeStateEn } from "../config/initialResumeData";
 import { normalizeResumeDocument, validateMutationId, validateResumeId, validateRevision } from "../lib/resume-storage-contract";
@@ -5,13 +7,9 @@ import type { ResumeData } from "../types/resume";
 import type { ResumeSnapshot, StoredResume } from "../lib/resume-storage-contract";
 
 export const DEFAULT_API_URL = "http://127.0.0.1:3000";
+const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 export const SECTIONS = ["basic", "education", "experience", "projects", "certificates", "customData", "skillContent", "selfEvaluationContent", "menuSections", "globalSettings"] as const;
 export type Section = typeof SECTIONS[number];
-export class AgentError extends Error {
-  resumeId?: string;
-  constructor(public code: string, message: string, public status = 400, public current?: StoredResume | null, public mutationId?: string) { super(message); }
-}
-
 export function apiURL(value = process.env.MAGIC_RESUME_API_URL ?? DEFAULT_API_URL): string {
   let url: URL;
   try { url = new URL(value); } catch { throw new AgentError("invalidAPIURL", "API URL must be a local HTTP origin."); }
@@ -19,81 +17,6 @@ export function apiURL(value = process.env.MAGIC_RESUME_API_URL ?? DEFAULT_API_U
     throw new AgentError("invalidAPIURL", "Use a local HTTP origin, for example http://127.0.0.1:3000.");
   }
   return url.origin;
-}
-
-const forbidden = new Set(["__proto__", "prototype", "constructor"]);
-export function assertJSON(value: unknown, depth = 0, budget = { remaining: 20000 }): void {
-  if (++depth > 32 || --budget.remaining < 0) throw new AgentError("invalidPatch", "JSON is too deeply nested or has too many fields.");
-  if (value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number" && Number.isFinite(value)) return;
-  if (Array.isArray(value)) { for (const item of value) assertJSON(item, depth, budget); return; }
-  if (!value || typeof value !== "object") throw new AgentError("invalidPatch", "Only JSON values are accepted.");
-  for (const [key, child] of Object.entries(value)) {
-    if (forbidden.has(key)) throw new AgentError("invalidPatch", "Prototype keys are not accepted.");
-    assertJSON(child, depth, budget);
-  }
-}
-function object(value: unknown): value is Record<string, unknown> { return !!value && typeof value === "object" && !Array.isArray(value); }
-function merge(target: unknown, patch: unknown): unknown {
-  if (!object(patch)) return structuredClone(patch);
-  const result: Record<string, unknown> = object(target) ? structuredClone(target) : {};
-  for (const [key, value] of Object.entries(patch)) {
-    if (value === null) delete result[key]; else result[key] = merge(result[key], value);
-  }
-  return result;
-}
-
-function validateFields(value: Record<string, unknown>, schema: Record<string, string>) {
-  for (const [key, type] of Object.entries(schema)) {
-    if (value[key] !== undefined && (typeof value[key] !== type || type === "number" && (!Number.isFinite(value[key]) || (value[key] as number) < 0))) {
-      throw new AgentError("invalidResumeField", `Invalid field type: ${key} must be ${type}.`);
-    }
-  }
-}
-export function validateAgentResume(resume: ResumeData): ResumeData {
-  assertJSON(resume);
-  validateFields(resume.basic as unknown as Record<string, unknown>, { githubContributionsVisible: "boolean", layout: "string" });
-  validateFields(resume.basic.photoConfig as unknown as Record<string, unknown>, { width: "number", height: "number", customBorderRadius: "number", visible: "boolean", aspectRatio: "string", borderRadius: "string" });
-  for (const icon of Object.values(resume.basic.icons)) if (typeof icon !== "string") throw new AgentError("invalidResumeField", "Basic icons must be strings.");
-  const arrays: [unknown[], Record<string, string>][] = [
-    [resume.basic.customFields, { label: "string", value: "string", icon: "string", visible: "boolean", custom: "boolean", displayLabel: "boolean" }],
-    [resume.basic.fieldOrder ?? [], { key: "string", label: "string", type: "string", visible: "boolean", custom: "boolean" }],
-    [resume.education, { school: "string", major: "string", degree: "string", startDate: "string", endDate: "string", gpa: "string", description: "string", visible: "boolean" }],
-    [resume.experience, { company: "string", position: "string", date: "string", details: "string", visible: "boolean" }],
-    [resume.projects, { name: "string", role: "string", date: "string", description: "string", link: "string", linkLabel: "string", visible: "boolean" }],
-    [resume.certificates, { url: "string", width: "number" }],
-    [resume.menuSections, { title: "string", icon: "string", enabled: "boolean", order: "number" }],
-    ...Object.values(resume.customData).map(items => [items, { title: "string", subtitle: "string", dateRange: "string", description: "string", visible: "boolean" }] as [unknown[], Record<string, string>]),
-  ];
-  for (const [items, fields] of arrays) {
-    if (!Array.isArray(items)) throw new AgentError("invalidResumeField", "Section items must be arrays.");
-    const ids = new Set<string>();
-    for (const item of items) {
-      if (!object(item) || typeof item.id !== "string" || !item.id || ids.has(item.id)) throw new AgentError("invalidResumeField", "Each section item needs a unique string id.");
-      ids.add(item.id); validateFields(item, fields);
-    }
-  }
-  validateFields(resume.globalSettings as Record<string, unknown>, {
-    themeColor: "string", fontFamily: "string", baseFontSize: "number", pagePadding: "number", paragraphSpacing: "number", lineHeight: "number", sectionSpacing: "number", headerSize: "number", subheaderSize: "number",
-    useIconMode: "boolean", centerSubtitle: "boolean", flexibleHeaderLayout: "boolean", autoOnePage: "boolean",
-  });
-  return resume;
-}
-export function patchResume(resume: ResumeData, patch: unknown): ResumeData {
-  if (!object(patch) || !Object.keys(patch).length) throw new AgentError("invalidPatch", "Provide a non-empty JSON object patch.");
-  assertJSON(patch);
-  const allowed = new Set([...Object.keys(blankResumeState), "templateId"]);
-  for (const key of Object.keys(patch)) if (!allowed.has(key) || ["id", "createdAt", "updatedAt"].includes(key)) throw new AgentError("invalidPatch", `Cannot patch field: ${key}.`);
-  const prepared = { ...patch };
-  // Reads omit certificate image URLs. Replacing an array must not erase an
-  // existing image just because the agent never received that large field.
-  if (Array.isArray(prepared.certificates)) {
-    const existing = new Map(resume.certificates.map(item => [item.id, item.url]));
-    const certificates = prepared.certificates.map(item => object(item) && typeof item.id === "string" && !Object.hasOwn(item, "url") && existing.has(item.id)
-      ? { ...item, url: existing.get(item.id) } : item);
-    if (certificates.some(item => !object(item) || typeof item.url !== "string")) throw new AgentError("invalidResumeField", "New certificates need a URL; existing omitted URLs are preserved by id.");
-    prepared.certificates = certificates;
-  }
-  return validateAgentResume(normalizeResumeDocument(merge(resume, prepared)));
 }
 
 export function projectResume(record: StoredResume, options: { sections?: Section[]; includeImages?: boolean } = {}) {
@@ -123,13 +46,14 @@ export function errorDetails(error: unknown): Record<string, unknown> {
 
 export class ResumeAgentClient {
   readonly origin: string;
-  constructor(origin?: string) { this.origin = apiURL(origin); }
-  private async request<T>(path: string, method = "GET", body?: unknown): Promise<T> {
+  constructor(origin?: string, private source: "cli" | "mcp" = "cli") { this.origin = apiURL(origin); }
+  private async request<T>(path: string, method = "GET", body?: unknown, workspace = false): Promise<T> {
     const mutationId = object(body) && typeof body.mutationId === "string" ? body.mutationId : undefined;
     try {
-      const response = await fetch(`${this.origin}/api/resumes/${path}`, {
-        method, redirect: "error", signal: AbortSignal.timeout(30000),
-        ...(body === undefined ? {} : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+      const response = await fetch(`${this.origin}${workspace ? "/api/workspace/ai-control" : "/api/resumes/"}${path}`, {
+        method, redirect: "error", signal: AbortSignal.timeout(workspace ? 150000 : 30000),
+        headers: { "X-Magic-Resume-Client": this.source, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
       let data;
       try { data = await response.json(); } catch { throw new AgentError("invalidResponse", "Web server did not return resume API JSON.", 502, undefined, mutationId); }
@@ -169,4 +93,48 @@ export class ResumeAgentClient {
     const deleted = await this.request<{ revision: number }>(encodeURIComponent(id), "DELETE", { expectedRevision, mutationId });
     return { id, ...deleted, mutationId, deleted: true };
   }
+  async editItem(id: string, expectedRevision: number, operation: unknown, mutationId: string = randomUUID()) {
+    validateResumeId(id); validateRevision(expectedRevision); validateMutationId(mutationId); assertJSON(operation);
+    return projectResume(await this.request<StoredResume>(`${encodeURIComponent(id)}/items`, "POST", { operation, expectedRevision, mutationId }));
+  }
+  history(id: string, limit = 25, before?: number) {
+    validateResumeId(id);
+    return this.request<any>(`${encodeURIComponent(id)}/history?limit=${limit}${before === undefined ? "" : `&before=${before}`}`);
+  }
+  private rawVersion(id: string, version: number) {
+    validateResumeId(id); validateRevision(version);
+    return this.request<StoredResume & { deleted: boolean; action: string; source: string }>(`${encodeURIComponent(id)}/history?version=${version}`);
+  }
+  async version(id: string, version: number, includeImages = false) {
+    const record = await this.rawVersion(id, version);
+    const { resume, ...metadata } = record;
+    return { ...metadata, ...projectResume(record, { includeImages }) };
+  }
+  async diff(id: string, from: number, to: number) {
+    const [a, b] = await Promise.all([this.rawVersion(id, from), this.rawVersion(id, to)]);
+    const changedFields: string[] = [];
+    const compare = (a: any, b: any, path: string) => {
+      if (path === "basic.githubKey" || path === "updatedAt") return;
+      if (a && b && typeof a === "object" && typeof b === "object" && !Array.isArray(a) && !Array.isArray(b)) {
+        for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) compare(a[key], b[key], path ? `${path}.${key}` : key);
+      } else if (JSON.stringify(a) !== JSON.stringify(b)) changedFields.push(path);
+    };
+    compare(a.resume, b.resume, "");
+    if (a.deleted !== b.deleted) changedFields.push("deleted");
+    return { id, fromRevision: from, toRevision: to, changedFields };
+  }
+  deleted() { return this.request<any>("?deleted=1"); }
+  async restore(id: string, targetRevision: number, expectedRevision: number, mutationId: string = randomUUID()) {
+    validateResumeId(id); validateRevision(targetRevision); validateRevision(expectedRevision); validateMutationId(mutationId);
+    return projectResume(await this.request<StoredResume>(`${encodeURIComponent(id)}/restore`, "POST", { targetRevision, expectedRevision, mutationId }));
+  }
+  aiList() { return this.request<any>("", "GET", undefined, true); }
+  aiProviders() { return this.request<any>("?providers=1", "GET", undefined, true); }
+  aiChange(operation: Record<string, unknown>, expectedRevision: number, storageId: string, mutationId: string = randomUUID()) {
+    assertJSON(operation); validateRevision(expectedRevision); validateMutationId(mutationId);
+    return this.request<any>("", "POST", { ...operation, expectedRevision, storageId, mutationId }, true);
+  }
+  aiTest(modelId: string, kind: "text" | "pdf" = "text") { return this.request<any>("", "POST", { action: "test", modelId, kind }, true); }
+  aiDiscover(modelId: string) { return this.request<any>("", "POST", { action: "discover", modelId }, true); }
+
 }

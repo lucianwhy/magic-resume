@@ -11,7 +11,7 @@ pnpm test:agent
 The agent suite uses an isolated database and web server, a real stdio MCP
 client and Chromium. It checks CLI stdin/export/import, tool/resource discovery,
 two-way synchronization with the browser, revision conflicts, image/credential
-preservation and deletion. Both entry points start from outside the repository.
+preservation and deletion. It also checks item edits, history/diffs/restore, redacted AI configuration, assignment, conflicts, and stored-key calls to a local synthetic provider; it does not call real providers. Both entry points start from outside the repository.
 Artifacts are stored in the ignored `.local/agent-tests/` directory.
 
 ## Database storage

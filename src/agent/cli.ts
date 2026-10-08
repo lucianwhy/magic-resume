@@ -13,6 +13,21 @@ const HELP = `Magic Resume CLI — JSON output; local API defaults to http://127
   delete ID --revision N [--mutation-id UUID]
   export ID --output resume.json|- [--force]
   import --file resume.json|-
+  item ID --revision N --file operation.json|- [--mutation-id UUID]
+  history ID [--limit 25] [--before N]
+  version ID --version N [--include-images]
+  diff ID --from N --to N
+  restore ID --version N --revision N [--mutation-id UUID]
+  deleted
+  ai list | ai providers
+  ai save --revision N --storage-id UUID --file profile.json|- [--mutation-id UUID]
+  ai delete --model-id ID --revision N --storage-id UUID [--mutation-id UUID]
+  ai assign --task text|pdf --model-id ID|none --revision N --storage-id UUID [--mutation-id UUID]
+  ai test --model-id ID [--kind text|pdf]
+  ai discover --model-id ID
+
+AI lists/writes omit API keys. Omit apiKey when updating to preserve it.
+AI --revision can be 0 on first save. Use ai list for revision/storageId.
 
 All commands: --url http://127.0.0.1:PORT (or MAGIC_RESUME_API_URL).
 Patches use JSON Merge Patch: objects merge, arrays replace, null removes a field.
@@ -21,6 +36,10 @@ Export includes images and secrets for backup. Existing files need --force.
 Start the database and web server first: pnpm db:start; pnpm db:migrate; pnpm dev
 `;
 const optionNames: Record<string, string[]> = {
+  item: ["revision", "file", "mutation-id"], history: ["limit", "before"], version: ["version", "include-images"], diff: ["from", "to"], restore: ["version", "revision", "mutation-id"], deleted: [],
+  "ai-list": [], "ai-providers": [], "ai-save": ["revision", "storage-id", "file", "mutation-id"],
+  "ai-delete": ["model-id", "revision", "storage-id", "mutation-id"], "ai-assign": ["task", "model-id", "revision", "storage-id", "mutation-id"],
+  "ai-test": ["model-id", "kind"], "ai-discover": ["model-id"],
   list: [], get: ["section", "include-images"], create: ["title", "locale", "id", "file", "mutation-id"],
   patch: ["revision", "file", "mutation-id"], delete: ["revision", "mutation-id"], export: ["output", "force"], import: ["file"],
 };
@@ -45,25 +64,48 @@ function required(value: string | undefined, name: string): string {
   if (value === undefined || value === "") throw new AgentError("usage", `Missing ${name}. Run --help.`);
   return value;
 }
-function revision(value?: string): number {
-  if (!value || !/^[1-9][0-9]*$/.test(value) || !Number.isSafeInteger(Number(value))) throw new AgentError("usage", "--revision must be a positive integer from get/list.");
+function revision(value?: string, allowZero = false): number {
+  if (!value || !(allowZero ? /^(0|[1-9][0-9]*)$/ : /^[1-9][0-9]*$/).test(value) || !Number.isSafeInteger(Number(value))) throw new AgentError("usage", "--revision must be a positive integer from get/list.");
   return Number(value);
 }
 async function main() {
   const { values, positionals } = parseArgs({ allowPositionals: true, strict: true, options: {
+    version: { type: "string" }, limit: { type: "string" }, before: { type: "string" }, from: { type: "string" }, to: { type: "string" },
+    "model-id": { type: "string" }, "storage-id": { type: "string" }, task: { type: "string" }, kind: { type: "string" },
     help: { type: "boolean", short: "h" }, url: { type: "string" }, title: { type: "string" }, locale: { type: "string" },
     id: { type: "string" }, file: { type: "string" }, revision: { type: "string" }, "mutation-id": { type: "string" },
     section: { type: "string" }, "include-images": { type: "boolean" }, output: { type: "string" }, force: { type: "boolean" },
   } });
   if (values.help || !positionals.length) { process.stdout.write(HELP); return; }
+  if (positionals[0] === "ai") positionals.splice(0, 2, `ai-${positionals[1] ?? ""}`);
   const [command, id] = positionals;
   if (!Object.hasOwn(optionNames, command)) throw new AgentError("usage", `Unknown command: ${command}. Run --help.`);
-  const needsID = ["get", "patch", "delete", "export"].includes(command);
+  const needsID = ["get", "patch", "delete", "export", "item", "history", "version", "diff", "restore"].includes(command);
   if (positionals.length !== (needsID ? 2 : 1)) throw new AgentError("usage", `Invalid arguments for ${command}. Run --help.`);
   for (const key of Object.keys(values)) if (!["help", "url", ...optionNames[command]].includes(key)) throw new AgentError("usage", `--${key} is not valid for ${command}.`);
   const client = new ResumeAgentClient(values.url);
   let result: unknown;
   switch (command) {
+    case "item": result = await client.editItem(id, revision(values.revision), await readJSON(required(values.file, "--file")), values["mutation-id"]); break;
+    case "history": result = await client.history(id, values.limit ? revision(values.limit) : 25, values.before ? revision(values.before) : undefined); break;
+    case "version": result = await client.version(id, revision(values.version), values["include-images"]); break;
+    case "diff": result = await client.diff(id, revision(values.from), revision(values.to)); break;
+    case "restore": result = await client.restore(id, revision(values.version), revision(values.revision), values["mutation-id"]); break;
+    case "deleted": result = await client.deleted(); break;
+    case "ai-list": result = await client.aiList(); break;
+    case "ai-providers": result = await client.aiProviders(); break;
+    case "ai-save": result = await client.aiChange({ action: "upsert", profile: await readJSON(required(values.file, "--file")) }, revision(values.revision, true), required(values["storage-id"], "--storage-id"), values["mutation-id"]); break;
+    case "ai-delete": result = await client.aiChange({ action: "delete", modelId: required(values["model-id"], "--model-id") }, revision(values.revision, true), required(values["storage-id"], "--storage-id"), values["mutation-id"]); break;
+    case "ai-assign": {
+      if (!values.task || !["text", "pdf"].includes(values.task)) throw new AgentError("usage", "--task must be text or pdf.");
+      const modelId = required(values["model-id"], "--model-id");
+      result = await client.aiChange({ action: "assign", task: values.task, modelId: modelId === "none" ? null : modelId }, revision(values.revision, true), required(values["storage-id"], "--storage-id"), values["mutation-id"]); break;
+    }
+    case "ai-test": {
+      if (values.kind && !["text", "pdf"].includes(values.kind)) throw new AgentError("usage", "--kind must be text or pdf.");
+      result = await client.aiTest(required(values["model-id"], "--model-id"), values.kind as "text" | "pdf" | undefined); break;
+    }
+    case "ai-discover": result = await client.aiDiscover(required(values["model-id"], "--model-id")); break;
     case "list": result = await client.list(); break;
     case "get": {
       const sections = values.section?.split(",") as Section[] | undefined;

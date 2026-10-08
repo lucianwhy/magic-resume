@@ -127,6 +127,8 @@ codex mcp get magic-resume --json
 
 Reload MCP or open a new session to use `list_resumes`, `get_resume`, `create_resume`, `update_resume`, and `delete_resume`. Edits synchronize to the web app. Set `MAGIC_RESUME_API_URL` when using another local port. This is a local stdio server, not a public MCP URL for a remote ChatGPT connector.
 
+There are now **18 MCP tools**, including AI model configuration/assignment/testing, item-level edits, persisted history, diffs and restore. CLI adds `ai`, `item`, `history`, `version`, `diff`, `restore` and `deleted`. Run `pnpm db:migrate` and reconnect MCP after updating. AI listings never return API keys; model tests resolve database credentials on the server.
+
 See [CLI and MCP setup](docs/CLI_MCP.md) for complete arguments, section editing, and backups.
 
 ## 💾 Storage scope
@@ -135,7 +137,7 @@ PostgreSQL is the primary storage for durable business data: complete resume doc
 
 The first application visit migrates legacy settings from the same browser origin. After resumes and settings are successfully imported, their former browser copies are removed; the database keeps migration backups and import receipts. Visit other original origins to migrate their separate settings. API keys are currently stored in local database JSONB; database backups contain credentials and should stay private. The API accepts only local connections.
 
-The application no longer writes business data to localStorage, sessionStorage, IndexedDB, or cookies. Unsaved edits exist only in page memory: reconnect and retry, or export before leaving; closing the page loses uncommitted edits. Browser directory access uses a non-serializable `FileSystemHandle`, also kept only in memory. Select the sync directory again after refreshing; its metadata remains in PostgreSQL. Undo history, loading state, and temporary AI checks are session state. Original PDF files are not automatically archived as database attachments. See [database storage and API](docs/DATABASE_STORAGE.md).
+The application no longer writes business data to localStorage, sessionStorage, IndexedDB, or cookies. Unsaved edits exist only in page memory: reconnect and retry, or export before leaving; closing the page loses uncommitted edits. Browser directory access uses a non-serializable `FileSystemHandle`, also kept only in memory. Select the sync directory again after refreshing; its metadata remains in PostgreSQL. Editor undo/redo, loading state, and temporary AI checks are session state. Persisted database snapshots are separately available through CLI/MCP history and restore. Original PDF files are not automatically archived as database attachments. See [database storage and API](docs/DATABASE_STORAGE.md).
 
 ## 📦 Build and Deploy
 

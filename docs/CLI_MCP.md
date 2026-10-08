@@ -125,3 +125,61 @@ pnpm build
 `test:agent` 使用独立随机 PostgreSQL 测试库、独立网页服务和合成简历，验证真实 stdio 初始化、工具/资源发现、CLI stdin/导入导出、CLI/MCP 与网页双向同步、秘密字段保留、冲突和删除。两个入口还从仓库外的工作目录启动；结束后删除测试库。产物在被 Git 排除的 `.local/agent-tests`。
 
 当前 MCP 为本机 stdio，不是远程 ChatGPT 连接器的公网 HTTP 地址。远程、多用户接入需要另外实现认证、数据权限和部署。
+
+## AI 配置、条目编辑与历史版本
+
+执行 `pnpm db:migrate` 应用 `004-resume-history`。更新代码后重新连接 MCP；工具由 5 个扩展为 18 个。现有注册命令和入口不变。
+
+### AI 模型管理
+
+```bash
+pnpm resume ai providers
+pnpm resume ai list
+pnpm resume ai save --revision 0 --storage-id WORKSPACE_UUID --file profile.json
+pnpm resume ai assign --task text --model-id MODEL_PROFILE_ID --revision 1 --storage-id WORKSPACE_UUID
+pnpm resume ai test --model-id MODEL_PROFILE_ID --kind text
+pnpm resume ai discover --model-id MODEL_PROFILE_ID
+```
+
+`WORKSPACE_UUID`、版本号和模型配置 ID 必须来自最新的 `ai list`。模型配置 ID 与服务商的模型名称不同。`profile.json` 例如：
+
+```json
+{"id":"my-qwen","provider":"qwen","name":"文字与视觉助手","model":"qwen3-vl-plus","apiKey":"你的密钥"}
+```
+
+也可用 `--file -` 从 stdin 输入；包含凭据的文件只供本机配置使用。更新传入 `id` 和需要修改的字段，省略 `apiKey` 会保留原 Key；空字符串会清除 Key。删除模型用 `ai delete`；取消任务分配用 `ai assign --model-id none`。列表与写入结果都不返回 Key，只返回 `hasApiKey` / `configured`。
+
+对应工具为 `list_ai_providers`、`list_ai_models`、`save_ai_model`、`delete_ai_model`、`assign_ai_model`、`test_ai_model`、`discover_ai_models`。写入参数为 `expectedRevision`、`storageId` 和可选 `mutationId`。测试和服务商模型发现仅传已保存的 `modelId`，后端从 PostgreSQL 读取凭据；文字测试检查 OK，PDF 测试让视觉模型识别随机数字图片。测试会实际访问已配置服务商并可能产生调用费用。
+
+### 精确编辑条目
+
+```bash
+pnpm resume get RESUME_ID --section experience
+pnpm resume item RESUME_ID --revision CURRENT_REVISION --file operation.json
+```
+
+只改一段经历的公司名称：
+
+```json
+{"section":"experience","action":"update","itemId":"EXISTING_ITEM_ID","item":{"company":"科大讯飞"}}
+```
+
+对应工具 `edit_resume_item` 的 `operation` 使用上述结构。支持 `add`、`update`、`remove`、`reorder`；更新/删除传 `itemId`，新增传 `item`，排序传完整 `itemIds` 数组。新增省略 ID 时自动生成，结果里返回完整栏目中的新 ID。重排必须恰好包含所有现有 ID，禁止通过更新改变条目 ID。
+
+支持 `education`、`experience`、`projects`、`certificates`、`menuSections`、`basic.customFields`、`basic.fieldOrder`、`customData.SECTION_ID`。新增自定义栏目正文后，还需添加相应 `menuSections` 条目使其可见。条目操作在数据库事务中合并，不要求客户端重发整个栏目，并保留未修改的字段、照片和 Key。
+
+### 历史、比较与恢复
+
+```bash
+pnpm resume history RESUME_ID --limit 25
+pnpm resume version RESUME_ID --version HISTORICAL_REVISION
+pnpm resume diff RESUME_ID --from OLD_REVISION --to NEW_REVISION
+pnpm resume restore RESUME_ID --version HISTORICAL_REVISION --revision CURRENT_REVISION
+pnpm resume deleted
+```
+
+对应工具 `list_resume_history`、`get_resume_version`、`diff_resume_versions`、`restore_resume_version`、`list_deleted_resumes`。历史分页用 `nextBefore` 再传 `before`；比较返回变化字段路径，不返回凭据或正文值。历史正文默认隐藏图片和 GitHub Key，图片可显式选择包含。
+
+数据库触发器在同一事务中记录网页、CLI、MCP 的新建、修改、导入、删除及恢复。`source` 是入口标签（web/cli/mcp），不是用户身份认证。恢复需要当前版本号，写成新的递增版本，不删除旧历史；同样可恢复已删除简历。编辑器撤销/重做仍属于当前页面会话，数据库历史独立保留。
+
+迁移时已有简历只建立当前版本的 `baseline` 快照，无法重建迁移前没有保存的旧版本。历史包含完整正文与凭据，存放在数据库中，不复制到浏览器；目前每次提交保留完整快照，没有自动清理。数据库备份也包含这些快照。
